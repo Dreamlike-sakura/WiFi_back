@@ -1,5 +1,5 @@
 database:
-  address: http://118.31.171.61/
+  address: 118.31.171.61
   port: 3306
   dbname: project
   user: project
