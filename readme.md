@@ -5,11 +5,25 @@
 ## 目录说明
 ``` 
 .
-|-app
-| |-config # 配置文件读取文件
-|   |-logger.go # 日志配置
-|   |-main.go
-未完待续...
+|-- app
+|   |-- app.go # 后台应用实例返回方法
+|   |-- config # 配置文件读取文件
+|   |   |-- logger.go
+|   |   `-- main.go
+|   |-- controller # 控制器逻辑
+|   |   |-- user.go
+|   |   `-- warp.go
+|   |-- model # 模块实现
+|   |   |-- main.go
+|   |   |-- type.go
+|   |   `-- user.go
+|   `-- router.go # 路由配置
+|-- dev.yml # 配置文件
+|-- go.mod # go.mod文件
+|-- go.sum
+|-- main.go # 应用程序入口
+`-- readme.txt
+
 ``` 
 ## 运行方法 配置文件配置项说明
 运行时需要加入命令行参数，读取配置文件相关命令如下：
