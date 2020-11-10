@@ -7,7 +7,7 @@ var logger *zap.SugaredLogger
 func Init() {
 	var temp *zap.Logger
 
-	temp, _ = zap.NewProduction()
+	temp, _ = zap.NewDevelopment()
 	logger = temp.Sugar()
 
 	logger.Info("[Init] 初始化日志成功")
