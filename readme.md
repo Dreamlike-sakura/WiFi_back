@@ -6,6 +6,9 @@
 ``` 
 .
 |-app
+| |-config # 配置文件读取文件
+|   |-logger.go # 日志配置
+|   |-main.go
 未完待续...
 ``` 
 ## 运行方法 配置文件配置项说明
@@ -15,7 +18,13 @@
 ``` 
 配置文件说明如下：
 ``` 
-未完待续...
+database:
+  address: 118.31.171.61  #数据库域名
+  port: 3306              #数据库端口
+  dbname: project         #数据库名称
+  user: project           #用户名
+  password: WiFi6666      #数据库密码
+
 ```
 ## API文档
 ### 用户登录
@@ -23,9 +32,21 @@
 * Method: POST
 #### 前端发送
 ``` 
-未完待续...
+{
+    user_name: string
+    user_pwd:  string
+}
+
 ``` 
 #### 返回数据
 ``` 
-未完待续...
+{
+    status: "success" || "error"
+    message: string
+    data: {
+        is_login: boolean //true表示登录成功
+        type：    int//权限0是普通用户，1是管理员，2是超级管理员。
+    }
+}
+
 ``` 
