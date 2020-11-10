@@ -16,11 +16,6 @@ func CreateGinApp() (app *gin.Engine) {
 	// 设置日志
 	config.Init()
 
-	// 设置运行模式
-	if config.Config.App.Mode == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	app = gin.Default()
 
 	// 链接数据库

@@ -8,27 +8,20 @@ import (
 
 type database struct {
 	Address  string
-	Port     int
+	Port     string
 	Dbname   string
 	User     string
 	Password string
 }
 
-type app struct {
-	Port    string
-	Mode    string
-	Timeout int
-	Secret  string
-}
 
 type t struct {
 	Database database
-	App      app
 }
 
 var Config t
 
-var cliPath = flag.String("path", "./dev.yaml", "Input config file path")
+var cliPath = flag.String("path", "./dev.yml", "Input config file path")
 
 func (config *t) GetConfig() {
 	// 得到参数

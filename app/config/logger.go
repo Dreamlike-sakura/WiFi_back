@@ -6,12 +6,8 @@ var logger *zap.SugaredLogger
 
 func Init() {
 	var temp *zap.Logger
-	if Config.App.Mode == "release" {
-		temp, _ = zap.NewProduction()
-	} else {
-		temp, _ = zap.NewDevelopment()
-	}
 
+	temp, _ = zap.NewProduction()
 	logger = temp.Sugar()
 
 	logger.Info("[Init] 初始化日志成功")
