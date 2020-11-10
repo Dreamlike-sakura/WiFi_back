@@ -13,13 +13,13 @@ import (
  */
 func NewUser(username string) *User {
 	temp := &User{
-		wg:         sync.WaitGroup{},
-		Info:       Info{},
-		LoginData:  LoginData{},
+		wg:        sync.WaitGroup{},
+		Info:      Info{},
+		LoginData: LoginData{},
 	}
 
 	temp.wg.Add(1)
-	
+
 	return temp
 }
 
@@ -42,7 +42,7 @@ func (u *User) login(user_name string, user_pwd string) (err error) {
 				pwd = ?`,
 		user_name,
 		user_pwd,
-		).Row()
+	).Row()
 	err = row.Scan(&data.Type)
 	if err != nil {
 		data.IsLogin = false
@@ -56,6 +56,7 @@ func (u *User) login(user_name string, user_pwd string) (err error) {
 
 	return
 }
+
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(user_name string, user_pwd string) (err error, data LoginData) {
 	config.GetLogger().Info("开始获取登录数据")

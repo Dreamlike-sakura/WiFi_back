@@ -27,7 +27,6 @@ func New() {
 	var err error
 	db, err = gorm.Open("mysql", dbURL)
 
-
 	if err != nil {
 		temp := fmt.Sprintf("Database connect error: %v", err.Error())
 		panic(temp)
@@ -37,4 +36,3 @@ func New() {
 
 	return
 }
-

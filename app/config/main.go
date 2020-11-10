@@ -14,7 +14,6 @@ type database struct {
 	Password string
 }
 
-
 type t struct {
 	Database database
 }
@@ -41,4 +40,3 @@ func (config *t) GetConfig() {
 		panic(err.Error())
 	}
 }
-

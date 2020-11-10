@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/gin-gonic/gin"
 	"back/app/config"
 	"back/app/model"
+	"github.com/gin-gonic/gin"
 )
 
 /**
@@ -26,5 +26,3 @@ func CreateGinApp() (app *gin.Engine) {
 
 	return
 }
-
-
