@@ -35,3 +35,35 @@ func (s *User) LoginHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
+
+func (s *User) RegisterHandler(c *gin.Context) {
+	i := new(model.Info)
+	i.User = c.Query("user_name")
+	i.Password = c.Query("user_pwd")
+	i.Email = c.Query("user_email")
+	i.Tel = c.Query("user_tel")
+	i.Sex = "M"
+	i.Type = "0"
+	i.Head_portrait = "1"
+
+	if i.User == "" || i.Password == "" {
+		config.GetLogger().Warnw("账户信息不能为空",
+			"user_name:", i.User, "user_pwd:", i.Password,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("账号信息不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetRegisterData(i)
+	if err != nil {
+		config.GetLogger().Warnw("注册数据查询失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
