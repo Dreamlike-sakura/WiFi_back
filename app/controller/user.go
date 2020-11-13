@@ -22,7 +22,7 @@ func (s *User) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	user := model.NewUser(user_name)
+	user := model.NewUser()
 
 	err, data := user.GetLoginData(user_name, user_pwd)
 	if err != nil {
