@@ -44,14 +44,13 @@ database:
 ## API文档
 ### 用户登录
 * URL: /login
-* Method: POST
+* Method: GET
 #### 前端发送
 ``` 
 {
     user_name: string
     user_pwd:  string
 }
-
 ``` 
 #### 返回数据
 ``` 
@@ -61,6 +60,32 @@ database:
     data: {
         is_login: boolean //true表示登录成功
         type：    int//权限0是普通用户，1是管理员，2是超级管理员。
+    }
+}
+``` 
+### 用户注册
+* URL: /register
+* Method: GET
+#### 前端发送
+``` 
+{
+    user_name:  string
+    user_pwd:   string
+    user_tel:   string
+    user_email: string
+}
+Default:
+user_sex = "M"
+user_type = "0"
+head_portrait = "1"
+``` 
+#### 返回数据
+``` 
+{
+    status: "success" || "error"
+    message: string
+    data: {
+        registered: boolean //true表示注册成功
     }
 }
 
