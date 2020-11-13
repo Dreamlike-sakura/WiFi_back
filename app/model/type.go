@@ -1,12 +1,7 @@
 package model
 
-import (
-	"sync"
-)
-
 //用户实例
 type User struct {
-	wg        sync.WaitGroup
 	Info      Info
 	LoginData LoginData
 }
