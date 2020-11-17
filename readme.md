@@ -88,5 +88,41 @@ head_portrait = "1"
         registered: boolean //true表示注册成功
     }
 }
-
+``` 
+### 密码找回
+* URL: /find_password
+* Method: GET
+#### 前端发送
+``` 
+{
+    tel:           string
+    security_code: string
+}
+``` 
+#### 返回数据
+``` 
+{
+    status: "success" || "error"
+    message: string
+    data: {
+        identify: boolean
+    }
+}
+``` 
+### 发送验证码
+* URL: /send_code
+* Method: GET
+#### 前端发送
+``` 
+{
+    tel:   string
+}
+``` 
+#### 返回数据
+``` 
+{
+    status: "success" || "error"
+    message: string
+    data: nil
+}
 ``` 
