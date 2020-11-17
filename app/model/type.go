@@ -2,9 +2,10 @@ package model
 
 //用户实例
 type User struct {
-	Info         Info
-	LoginData    LoginData
-	RegisterData RegisterData
+	Info           Info
+	LoginData      LoginData
+	RegisterData   RegisterData
+	SecureCodeData SecureCodeData
 }
 
 //用户基本信息
@@ -27,4 +28,9 @@ type LoginData struct {
 //用户注册返回字段
 type RegisterData struct {
 	Registered bool `json:"registered"`
+}
+
+//手机验证码返回字段
+type SecureCodeData struct {
+	Sent bool `json:"sent"`
 }

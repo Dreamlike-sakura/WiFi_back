@@ -67,3 +67,28 @@ func (s *User) RegisterHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
+
+func (s *User) SecureCodeHandler(c *gin.Context) {
+	tel := c.Query("tel")
+
+	if tel == "" {
+		config.GetLogger().Warnw("手机号码不能为空",
+			"tel:", tel,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("手机号码不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetSecureCodeData(tel)
+	if err != nil {
+		config.GetLogger().Warnw("发送手机验证码失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
