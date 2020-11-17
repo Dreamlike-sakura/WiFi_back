@@ -104,8 +104,8 @@ func (u *User) send(tel string) (err error) {
 	request.PhoneNumbers = tel
 	request.SignName = "WiFi信号识别人体动作"
 	request.TemplateCode = "SMS_205458618"
-	//request.TemplateParam = "{code:" + randCode() + "}"
-	request.TemplateParam = "{code:123456}"
+	request.TemplateParam = "{code:" + randCode() + "}"
+	//request.TemplateParam = "{code:123456}"
 
 	response, errs := client.SendSms(request)
 	if errs != nil {
@@ -118,6 +118,7 @@ func (u *User) send(tel string) (err error) {
 	fmt.Printf("response is %#v\n", response)
 
 	//redis储存验证码，1分钟
+	config.GetRedis().Del(tel)
 	config.GetRedis().Set(tel, tel, 60)
 
 	data.Sent = true
