@@ -13,7 +13,7 @@ var (
 // 创建 redis 客户端
 func createClient() {
 	client = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "127.0.0.1:6379",
 		Password: "",
 		DB:       0,
 		PoolSize: 5,

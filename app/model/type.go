@@ -6,6 +6,7 @@ type User struct {
 	LoginData      LoginData
 	RegisterData   RegisterData
 	SecureCodeData SecureCodeData
+	VerifyCodeData VerifyCodeData
 }
 
 //用户基本信息
@@ -33,4 +34,9 @@ type RegisterData struct {
 //手机验证码返回字段
 type SecureCodeData struct {
 	Sent bool `json:"sent"`
+}
+
+//确认验证码返回字段
+type VerifyCodeData struct {
+	Verified bool `json:"identify"`
 }
