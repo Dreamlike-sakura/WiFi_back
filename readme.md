@@ -45,14 +45,14 @@ database:
 * URL: /login
 * Method: GET
 #### 前端发送
-```json
+```
 {
     user_name: string
     user_pwd:  string
 }
 ``` 
 #### 返回数据
-```json
+```
 {
     status: "success" || "error"
     message: string
@@ -66,7 +66,7 @@ database:
 * URL: /register
 * Method: GET
 #### 前端发送
-```json
+```
 {
     user_name:  string
     user_pwd:   string
@@ -79,7 +79,7 @@ user_type = "0"
 head_portrait = "1"
 ``` 
 #### 返回数据
-```json
+```
 {
     status: "success" || "error"
     message: string
@@ -92,14 +92,14 @@ head_portrait = "1"
 * URL: /find_password
 * Method: GET
 #### 前端发送
-```json
+```
 {
     tel:           string
     security_code: string
 }
 ``` 
 #### 返回数据
-```json
+```
 {
     status: "success" || "error"
     message: string
@@ -112,13 +112,13 @@ head_portrait = "1"
 * URL: /send_code
 * Method: GET
 #### 前端发送
-```json
+```
 {
     tel:   string
 }
 ``` 
 #### 返回数据
-```json
+```
 {
     status: "success" || "error"
     message: string
