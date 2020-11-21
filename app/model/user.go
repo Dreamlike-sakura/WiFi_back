@@ -34,7 +34,7 @@ func (u *User) login(user_name string, user_pwd string) (err error) {
 	data := &u.LoginData
 	config.GetLogger().Info("开始登录")
 	//查询用户类型
-	row := db.Table("user_info").Where("user = ? AND pwd = ?", user_name, user_pwd).Select("type").Row()
+	row := db.Table("user_info").Where("user = ? AND password = ?", user_name, user_pwd).Select("type").Row()
 
 	err = row.Scan(&data.Type)
 	if err != nil {
@@ -131,7 +131,7 @@ func (u *User) send(tel string) (err error) {
 	config.GetLogger().Info("发送验证码结束")
 	//redis储存验证码，1分钟
 	config.GetRedis().Del(tel)
-	config.GetRedis().Set(tel, code, 1 * time.Minute)
+	config.GetRedis().Set(tel, code, 1*time.Minute)
 
 	data.Sent = true
 
@@ -173,15 +173,20 @@ func (u *User) verify(tel string, code string) (err error) {
  * 查看个人信息
  */
 func (u *User) info(userID string) (err error) {
-	data := u.Info
+	data := &u.Info
 	config.GetLogger().Info("开始获取个人信息")
-	err = db.Table("user_info").Where("id = ?", userID).First(data).Error
+
+	row := db.Table("user_info").Where("id = ?", userID).
+		Select("user, password, tel, email, sex, type, head_portrait").Row();
+	
+	err = row.Scan(&data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
-		config.GetLogger().Warnw("注册失败",
+		config.GetLogger().Warnw("获取个人信息失败",
 			"err", err,
 		)
 		return
 	}
+
 	config.GetLogger().Info("获取个人信息结束")
 
 	return
