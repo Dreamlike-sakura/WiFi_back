@@ -32,6 +32,7 @@ func NewUser() *User {
  */
 func (u *User) login(user_name string, user_pwd string) (err error) {
 	data := &u.LoginData
+	config.GetLogger().Info("开始登录")
 	//查询用户类型
 	row := db.Table("user_info").Where("user = ? AND pwd = ?", user_name, user_pwd).Select("type").Row()
 
@@ -45,6 +46,7 @@ func (u *User) login(user_name string, user_pwd string) (err error) {
 	}
 
 	data.IsLogin = true
+	config.GetLogger().Info("登录结束")
 
 	return
 }
@@ -55,6 +57,7 @@ func (u *User) login(user_name string, user_pwd string) (err error) {
 func (u *User) register(i *Info) (err error) {
 	data := &u.RegisterData
 	count := 0
+	config.GetLogger().Info("开始注册")
 	//查询用户名是否重复，重复返回错误，否则数据库里插入 一条数据
 	db.Table("user_info").Where("user = ?", i.User).Count(&count)
 
@@ -75,6 +78,7 @@ func (u *User) register(i *Info) (err error) {
 		)
 		return
 	}
+	config.GetLogger().Info("注册结束")
 
 	data.Registered = true
 
@@ -97,9 +101,11 @@ func randCode() string {
 func (u *User) send(tel string) (err error) {
 	data := &u.SecureCodeData
 	//生成6位随机验证码
+	config.GetLogger().Info("开始生成6位随机验证码")
 	code := randCode()
+	config.GetLogger().Info("生成6位随机验证码结束")
 
-
+	config.GetLogger().Info("开始发送验证码")
 	//检查用于发送验证码的手机号是否已经被注册
 	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", "LTAI4G4TXShUqRfEf1AnpaMx", "MH8TYZoKEJdnsgM63tSQQwMCIezKst")
 
@@ -122,6 +128,7 @@ func (u *User) send(tel string) (err error) {
 	}
 	fmt.Printf("response is %#v\n", response)
 
+	config.GetLogger().Info("发送验证码结束")
 	//redis储存验证码，1分钟
 	config.GetRedis().Del(tel)
 	config.GetRedis().Set(tel, code, 1 * time.Minute)
@@ -136,6 +143,8 @@ func (u *User) send(tel string) (err error) {
  */
 func (u *User) verify(tel string, code string) (err error) {
 	data := &u.VerifyCodeData
+	config.GetLogger().Info("开始获取redis中的验证码")
+
 	tempCode, errs := config.GetRedis().Get(tel).Result()
 
 	if errs != nil {
@@ -146,15 +155,17 @@ func (u *User) verify(tel string, code string) (err error) {
 		return
 	}
 
+	config.GetLogger().Info("获取redis中的验证码结束")
 	println(tel, code)
 
+	config.GetLogger().Info("开始校验验证码")
 	if tempCode != code {
 		data.Verified = false
 		return errors.New("验证码错误")
 	} else {
 		data.Verified = true
 	}
-
+	config.GetLogger().Info("校验验证码结束")
 	return
 }
 
@@ -196,13 +207,13 @@ func (u *User) GetSecureCodeData(tel string) (err error, data SecureCodeData) {
 }
 
 func (u *User) GetVerifyCodeData(tel string, code string) (err error, data VerifyCodeData) {
-	config.GetLogger().Info("开始验证手机验证码")
+	config.GetLogger().Info("开始获取验证手机验证码数据")
 
 	err = u.verify(tel, code)
 
 	data = u.VerifyCodeData
 
-	config.GetLogger().Info("验证手机验证码结束")
+	config.GetLogger().Info("获取验证手机验证码数据结束")
 
 	return
 }
