@@ -169,6 +169,24 @@ func (u *User) verify(tel string, code string) (err error) {
 	return
 }
 
+/**
+ * 查看个人信息
+ */
+func (u *User) info(userID string) (err error) {
+	data := u.Info
+	config.GetLogger().Info("开始获取个人信息")
+	err = db.Table("user_info").Where("id = ?", userID).First(data).Error
+	if err != nil {
+		config.GetLogger().Warnw("注册失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("获取个人信息结束")
+
+	return
+}
+
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(user_name string, user_pwd string) (err error, data LoginData) {
 	config.GetLogger().Info("开始获取登录数据")
@@ -214,6 +232,18 @@ func (u *User) GetVerifyCodeData(tel string, code string) (err error, data Verif
 	data = u.VerifyCodeData
 
 	config.GetLogger().Info("获取验证手机验证码数据结束")
+
+	return
+}
+
+func (u *User) GetUserInfoData(userID string) (err error, data Info) {
+	config.GetLogger().Info("开始获取用户基本信息数据")
+
+	err = u.info(userID)
+
+	data = u.Info
+
+	config.GetLogger().Info("获取用户基本信息数据结束")
 
 	return
 }

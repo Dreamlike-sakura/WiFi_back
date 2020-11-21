@@ -7,8 +7,9 @@ import (
 
 func RegisterRouters(app *gin.Engine) {
 	user := controller.User{}
-	app.GET("/login", user.LoginHandler)
-	app.GET("/register", user.RegisterHandler)
-	app.GET("/send_code", user.SecureCodeHandler)
-	app.GET("/find_password", user.VerifyCodeHandler)
+	app.POST("/login", user.LoginHandler)
+	app.POST("/register", user.RegisterHandler)
+	app.POST("/send_code", user.SecureCodeHandler)
+	app.POST("/find_password", user.VerifyCodeHandler)
+	app.POST("/check_user_info", user.UserInfoHandler)
 }

@@ -118,3 +118,28 @@ func (s *User) VerifyCodeHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
+
+func (s *User) UserInfoHandler(c *gin.Context) {
+	userID := c.Query("user_id")
+
+	if userID == "" {
+		config.GetLogger().Warnw("用户ID不能为空",
+			"userID:", userID,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("用户ID不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetUserInfoData(userID)
+	if err != nil {
+		config.GetLogger().Warnw("获取用户基本信息失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
