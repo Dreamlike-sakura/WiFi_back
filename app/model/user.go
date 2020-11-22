@@ -2,6 +2,7 @@ package model
 
 import (
 	"back/app/config"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
@@ -22,6 +23,8 @@ func NewUser() *User {
 		RegisterData:   RegisterData{},
 		SecureCodeData: SecureCodeData{},
 		VerifyCodeData: VerifyCodeData{},
+		MovementData:   MovementData{},
+		ModifyData:     ModifyData{},
 	}
 
 	return temp
@@ -30,11 +33,24 @@ func NewUser() *User {
 /**
  * 登录验证
  */
-func (u *User) login(user_name string, user_pwd string) (err error) {
+func (u *User) login(cont string) (err error) {
 	data := &u.LoginData
 	config.GetLogger().Info("开始登录")
+
+	user := new(ReceiveLogin)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		data.IsLogin = false
+		config.GetLogger().Warnw("登录数据解析失败",
+			"err", err.Error(),
+		)
+		return err
+	}
+	userName := user.UserName
+	userPwd := user.UserPassword
+
 	//查询用户类型
-	row := db.Table("user_info").Where("user = ? AND password = ?", user_name, user_pwd).Select("type").Row()
+	row := db.Table("user_info").Where("user = ? AND password = ?", userName, userPwd).Select("type").Row()
 
 	err = row.Scan(&data.Type)
 	if err != nil {
@@ -177,8 +193,8 @@ func (u *User) info(userID string) (err error) {
 	config.GetLogger().Info("开始获取个人信息")
 
 	row := db.Table("user_info").Where("id = ?", userID).
-		Select("user, password, tel, email, sex, type, head_portrait").Row();
-	
+		Select("user, password, tel, email, sex, type, head_portrait").Row()
+
 	err = row.Scan(&data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
 		config.GetLogger().Warnw("获取个人信息失败",
@@ -192,11 +208,113 @@ func (u *User) info(userID string) (err error) {
 	return
 }
 
+/**
+ * 查看个人动作信息之跑步
+ */
+func (u *User) runInfo(userID string) (err error) {
+	data := &u.MovementData
+	config.GetLogger().Info("开始查询跑步动作信息")
+
+	row := db.Table("dealt_run").Where("uid = ?", userID).
+		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
+
+	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
+	if err != nil {
+		config.GetLogger().Warnw("查询跑步动作信息失败",
+			"err", err,
+		)
+		return
+	}
+
+	config.GetLogger().Info("查询跑步动作信息结束")
+
+	return
+}
+
+/**
+ * 查看个人动作信息之行走
+ */
+func (u *User) walkInfo(userID string) (err error) {
+	data := &u.MovementData
+	config.GetLogger().Info("开始查询行走动作信息")
+
+	row := db.Table("dealt_walk").Where("uid = ?", userID).
+		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
+
+	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
+	if err != nil {
+		config.GetLogger().Warnw("查询行走动作信息失败",
+			"err", err,
+		)
+		return
+	}
+
+	config.GetLogger().Info("查询行走动作信息结束")
+
+	return
+}
+
+/**
+ * 查看个人动作信息之摇手
+ */
+func (u *User) shakeInfo(userID string) (err error) {
+	data := &u.MovementData
+	config.GetLogger().Info("开始查询摇手动作信息")
+
+	row := db.Table("dealt_shakehand").Where("uid = ?", userID).
+		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
+
+	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
+	if err != nil {
+		config.GetLogger().Warnw("查询摇手动作信息失败",
+			"err", err,
+		)
+		return
+	}
+
+	config.GetLogger().Info("查询摇手动作信息结束")
+
+	return
+}
+
+/**
+ * 修改个人信息
+ */
+//func (u *User) changeInfo(userID string) (err error) {
+//	data := &u.ModifyData
+//	dataInfo := &u.Info
+//	count := 0
+//	config.GetLogger().Info("开始获取个人信息")
+//
+//	if err = db.Table("user_info").Where("id = ?", userID).Count(&count).Error; err != nil || count == 0 {
+//		data.Modified = false
+//		config.GetLogger().Warnw("获取个人信息失败",
+//			"err", errors.New("获取个人信息失败"),
+//		)
+//		return
+//	}
+//
+//	db.Table("user_info").Model(&dataInfo).Updates(map[string]interface{}{})
+//	err = db.Model(&user).Updates(map[string]interface{}{"name": "hello", "age": 18, "actived": false})
+//
+//	err = row.Scan(&data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
+//	if err != nil {
+//		config.GetLogger().Warnw("获取个人信息失败",
+//			"err", err,
+//		)
+//		return
+//	}
+//
+//	config.GetLogger().Info("获取个人信息结束")
+//
+//	return
+//}
+
 //----------------------------------分割线----------------------------------------
-func (u *User) GetLoginData(user_name string, user_pwd string) (err error, data LoginData) {
+func (u *User) GetLoginData(cont string) (err error, data LoginData) {
 	config.GetLogger().Info("开始获取登录数据")
 
-	err = u.login(user_name, user_pwd)
+	err = u.login(cont)
 
 	data = u.LoginData
 
@@ -249,6 +367,42 @@ func (u *User) GetUserInfoData(userID string) (err error, data Info) {
 	data = u.Info
 
 	config.GetLogger().Info("获取用户基本信息数据结束")
+
+	return
+}
+
+func (u *User) GetUserRunData(userID string) (err error, data MovementData) {
+	config.GetLogger().Info("开始获取用户跑步信息数据")
+
+	err = u.runInfo(userID)
+
+	data = u.MovementData
+
+	config.GetLogger().Info("获取用户跑步信息数据结束")
+
+	return
+}
+
+func (u *User) GetUserWalkData(userID string) (err error, data MovementData) {
+	config.GetLogger().Info("开始获取用户跑步信息数据")
+
+	err = u.walkInfo(userID)
+
+	data = u.MovementData
+
+	config.GetLogger().Info("获取用户跑步信息数据结束")
+
+	return
+}
+
+func (u *User) GetUserShakeData(userID string) (err error, data MovementData) {
+	config.GetLogger().Info("开始获取用户摇手信息数据")
+
+	err = u.shakeInfo(userID)
+
+	data = u.MovementData
+
+	config.GetLogger().Info("获取用户摇手信息数据结束")
 
 	return
 }

@@ -12,4 +12,5 @@ func RegisterRouters(app *gin.Engine) {
 	app.POST("/send_code", user.SecureCodeHandler)
 	app.POST("/find_password", user.VerifyCodeHandler)
 	app.POST("/check_user_info", user.UserInfoHandler)
+	app.POST("/check_user_run", user.UserRunHandler)
 }

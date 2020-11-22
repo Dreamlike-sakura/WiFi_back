@@ -4,6 +4,7 @@ import (
 	"back/app/config"
 	"back/app/model"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -12,11 +13,12 @@ type User struct {
 }
 
 func (s *User) LoginHandler(c *gin.Context) {
-	user_name := c.Query("user_name")
-	user_pwd := c.Query("user_pwd")
-	if user_name == "" || user_pwd == "" {
+	//user_name := c.Query("user_name")
+	//user_pwd := c.Query("user_pwd")
+	cont, _ := ioutil.ReadAll(c.Request.Body)
+	if cont == nil {
 		config.GetLogger().Warnw("账号密码不能为空",
-			"user_name", user_name, "user_pwd", user_pwd,
+			"cont", cont,
 		)
 		c.JSON(http.StatusOK, s.FailWarp("账号密码不能为空"))
 		return
@@ -24,7 +26,7 @@ func (s *User) LoginHandler(c *gin.Context) {
 
 	user := model.NewUser()
 
-	err, data := user.GetLoginData(user_name, user_pwd)
+	err, data := user.GetLoginData(string(cont))
 	if err != nil {
 		config.GetLogger().Warnw("数据查询失败",
 			"err", err.Error(),
@@ -133,6 +135,56 @@ func (s *User) UserInfoHandler(c *gin.Context) {
 	user := model.NewUser()
 
 	err, data := user.GetUserInfoData(userID)
+	if err != nil {
+		config.GetLogger().Warnw("获取用户基本信息失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
+func (s *User) UserRunHandler(c *gin.Context) {
+	userID := c.Query("user_id")
+
+	if userID == "" {
+		config.GetLogger().Warnw("用户ID不能为空",
+			"userID:", userID,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("用户ID不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetUserRunData(userID)
+	if err != nil {
+		config.GetLogger().Warnw("获取用户基本信息失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
+func (s *User) UserWalkHandler(c *gin.Context) {
+	userID := c.Query("user_id")
+
+	if userID == "" {
+		config.GetLogger().Warnw("用户ID不能为空",
+			"userID:", userID,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("用户ID不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetUserRunData(userID)
 	if err != nil {
 		config.GetLogger().Warnw("获取用户基本信息失败",
 			"err", err.Error(),
