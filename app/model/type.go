@@ -82,7 +82,8 @@ type SecureCodeData struct {
 
 //确认验证码返回字段
 type VerifyCodeData struct {
-	Verified bool `json:"identify"`
+	UserID   string `json:"user_id"`
+	Verified bool   `json:"identify"`
 }
 
 //修改个人信息返回字段
