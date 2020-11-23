@@ -9,6 +9,7 @@ type User struct {
 	VerifyCodeData VerifyCodeData
 	MovementData   MovementData
 	ModifyData     ModifyData
+	ChangePwdData  ChangePwdData
 }
 
 //用户基本信息
@@ -23,16 +24,15 @@ type Info struct {
 	Head_portrait string `json:"head_portrait"`
 }
 
-//用户登录返回字段
-type LoginData struct {
-	IsLogin bool   `json:"is_login"`
-	Type    int    `json:"type"`
-	UserID  string `json:"user_id"`
-}
-
 //用于接受用户登录时的参数
 type ReceiveLogin struct {
 	UserName     string `json:"user_name"`
+	UserPassword string `json:"user_pwd"`
+}
+
+//用于接受用户修改密码时的参数
+type ReceiveChangePwd struct {
+	UserID       string `json:"user_id"`
 	UserPassword string `json:"user_pwd"`
 }
 
@@ -70,6 +70,13 @@ type ReceiveChange struct {
 	HeadPortrait string `json:"head_portrait"`
 }
 
+//用户登录返回字段
+type LoginData struct {
+	IsLogin bool   `json:"is_login"`
+	Type    int    `json:"type"`
+	UserID  string `json:"user_id"`
+}
+
 //用户注册返回字段
 type RegisterData struct {
 	Registered bool `json:"registered"`
@@ -91,7 +98,12 @@ type ModifyData struct {
 	Modified bool `json:"modified"`
 }
 
-//动作信息返回
+//修改个人密码返回字段
+type ChangePwdData struct {
+	Changed bool `json:"changed"`
+}
+
+//动作信息返回字段
 type MovementData struct {
 	DealtAmplitude string `json:"dealt_amplitude"`
 	DealtPhase     string `json:"dealt_phase"`

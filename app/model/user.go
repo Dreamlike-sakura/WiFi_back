@@ -25,6 +25,7 @@ func NewUser() *User {
 		VerifyCodeData: VerifyCodeData{},
 		MovementData:   MovementData{},
 		ModifyData:     ModifyData{},
+		ChangePwdData:  ChangePwdData{},
 	}
 
 	return temp
@@ -355,7 +356,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	config.GetLogger().Info("完成解析数据")
 
 	config.GetLogger().Info("开始获取个人信息")
-	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error;
+	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error
 	if err != nil || count == 0 {
 		data.Modified = false
 		config.GetLogger().Warnw("获取个人信息失败",
@@ -371,7 +372,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	i.Email = user.UserEmail
 	i.Head_portrait = user.HeadPortrait
 
-	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user":i.User, "sex":i.Sex, "tel":i.Tel, "email":i.Email, "head_portrait":i.Head_portrait}).Error
+	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user": i.User, "sex": i.Sex, "tel": i.Tel, "email": i.Email, "head_portrait": i.Head_portrait}).Error
 	if err != nil {
 		data.Modified = false
 		config.GetLogger().Warnw("更新个人信息失败",
@@ -390,15 +391,15 @@ func (u *User) changeInfo(cont string) (err error) {
  * 修改个人密码
  */
 func (u *User) changePwd(cont string) (err error) {
-	data := &u.ModifyData
+	data := &u.ChangePwdData
 	i := new(Info)
 	count := 0
 
 	config.GetLogger().Info("开始解析数据")
-	user := new(ReceiveChange)
+	user := new(ReceiveChangePwd)
 	err = json.Unmarshal([]byte(cont), &user)
 	if err != nil {
-		data.Modified = false
+		data.Changed = false
 		config.GetLogger().Warnw("数据解析失败",
 			"err", err.Error(),
 		)
@@ -407,9 +408,9 @@ func (u *User) changePwd(cont string) (err error) {
 	config.GetLogger().Info("完成解析数据")
 
 	config.GetLogger().Info("开始获取个人信息")
-	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error;
+	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error
 	if err != nil || count == 0 {
-		data.Modified = false
+		data.Changed = false
 		config.GetLogger().Warnw("获取个人信息失败",
 			"err", err,
 		)
@@ -417,23 +418,21 @@ func (u *User) changePwd(cont string) (err error) {
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
-	i.User = user.UserName
-	i.Sex = user.UserSex
-	i.Tel = user.UserTel
-	i.Email = user.UserEmail
-	i.Head_portrait = user.HeadPortrait
+	config.GetLogger().Info("开始更新个人密码")
 
-	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user":i.User, "sex":i.Sex, "tel":i.Tel, "email":i.Email, "head_portrait":i.Head_portrait}).Error
+	i.Password = user.UserPassword
+
+	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"password": i.Password}).Error
 	if err != nil {
-		data.Modified = false
-		config.GetLogger().Warnw("更新个人信息失败",
+		data.Changed = false
+		config.GetLogger().Warnw("更新个人密码失败",
 			"err", err,
 		)
 		return
 	}
-	data.Modified = true
+	data.Changed = true
 
-	config.GetLogger().Info("更新个人信息结束")
+	config.GetLogger().Info("更新个人密码结束")
 
 	return
 }
@@ -451,7 +450,7 @@ func (u *User) GetLoginData(cont string) (err error, data LoginData) {
 	return
 }
 
-func (u *User) GetRegisterData( cont string) (err error, data RegisterData) {
+func (u *User) GetRegisterData(cont string) (err error, data RegisterData) {
 	config.GetLogger().Info("开始获取注册数据")
 
 	err = u.register(cont)
@@ -543,6 +542,18 @@ func (u *User) GetChangeData(cont string) (err error, data ModifyData) {
 	data = u.ModifyData
 
 	config.GetLogger().Info("修改用户信息结束")
+
+	return
+}
+
+func (u *User) GetChangePwdData(cont string) (err error, data ChangePwdData) {
+	config.GetLogger().Info("开始修改用户密码")
+
+	err = u.changePwd(cont)
+
+	data = u.ChangePwdData
+
+	config.GetLogger().Info("修改用户信息密码结束")
 
 	return
 }

@@ -164,6 +164,31 @@ func (s *User) ChangeInfoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
 
+func (s *User) ChangePwdHandler(c *gin.Context) {
+	cont, _ := ioutil.ReadAll(c.Request.Body)
+
+	if cont == nil {
+		config.GetLogger().Warnw("用户信息不能为空",
+			"cont:", cont,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("用户信息不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetChangePwdData(string(cont))
+	if err != nil {
+		config.GetLogger().Warnw("更新用户基本信息失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
 func (s *User) UserRunHandler(c *gin.Context) {
 	userID := c.Query("user_id")
 
