@@ -13,6 +13,7 @@ type User struct {
 
 //用户基本信息
 type Info struct {
+	ID            string `json:"user_id"`
 	User          string `json:"user_name"`
 	Password      string `json:"user_pwd"`
 	Sex           string `json:"user_sex"`
@@ -24,14 +25,39 @@ type Info struct {
 
 //用户登录返回字段
 type LoginData struct {
-	IsLogin bool `json:"is_login"`
-	Type    int  `json:"type"`
+	IsLogin bool   `json:"is_login"`
+	Type    int    `json:"type"`
+	UserID  string `json:"user_id"`
 }
 
 //用于接受用户登录时的参数
 type ReceiveLogin struct {
 	UserName     string `json:"user_name"`
 	UserPassword string `json:"user_pwd"`
+}
+
+//用于接受用户ID
+type ReceiveID struct {
+	UserID string `json:"user_id"`
+}
+
+//用于接受用户电话
+type ReceiveTel struct {
+	UserTel string `json:"tel"`
+}
+
+//用于接受用户验证码验证
+type ReceiveTelAndCode struct {
+	UserTel        string `json:"tel"`
+	UserSecureCode string `json:"security_code"`
+}
+
+//用于接受用户注册时的参数
+type ReceiveRegister struct {
+	UserName     string `json:"user_name"`
+	UserPassword string `json:"user_pwd"`
+	UserTel      string `json:"user_tel"`
+	UserEmail    string `json:"user_email"`
 }
 
 //用户注册返回字段

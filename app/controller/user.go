@@ -39,18 +39,12 @@ func (s *User) LoginHandler(c *gin.Context) {
 }
 
 func (s *User) RegisterHandler(c *gin.Context) {
-	i := new(model.Info)
-	i.User = c.Query("user_name")
-	i.Password = c.Query("user_pwd")
-	i.Email = c.Query("user_email")
-	i.Tel = c.Query("user_tel")
-	i.Sex = "M"
-	i.Type = "0"
-	i.Head_portrait = "1"
 
-	if i.User == "" || i.Password == "" {
+	cont, _ := ioutil.ReadAll(c.Request.Body)
+
+	if cont ==  nil {
 		config.GetLogger().Warnw("账户信息不能为空",
-			"user_name:", i.User, "user_pwd:", i.Password,
+			"cont:", cont,
 		)
 		c.JSON(http.StatusOK, s.FailWarp("账号信息不能为空"))
 		return
@@ -58,7 +52,7 @@ func (s *User) RegisterHandler(c *gin.Context) {
 
 	user := model.NewUser()
 
-	err, data := user.GetRegisterData(i)
+	err, data := user.GetRegisterData(string(cont))
 	if err != nil {
 		config.GetLogger().Warnw("注册数据查询失败",
 			"err", err.Error(),
@@ -71,9 +65,9 @@ func (s *User) RegisterHandler(c *gin.Context) {
 }
 
 func (s *User) SecureCodeHandler(c *gin.Context) {
-	tel := c.Query("tel")
+	tel, _ := ioutil.ReadAll(c.Request.Body)
 
-	if tel == "" {
+	if tel == nil {
 		config.GetLogger().Warnw("手机号码不能为空",
 			"tel:", tel,
 		)
@@ -83,7 +77,7 @@ func (s *User) SecureCodeHandler(c *gin.Context) {
 
 	user := model.NewUser()
 
-	err, data := user.GetSecureCodeData(tel)
+	err, data := user.GetSecureCodeData(string(tel))
 	if err != nil {
 		config.GetLogger().Warnw("发送手机验证码失败",
 			"err", err.Error(),
@@ -96,20 +90,19 @@ func (s *User) SecureCodeHandler(c *gin.Context) {
 }
 
 func (s *User) VerifyCodeHandler(c *gin.Context) {
-	tel := c.Query("tel")
-	code := c.Query("security_code")
+	cont, _ := ioutil.ReadAll(c.Request.Body)
 
-	if tel == "" || code == "" {
-		config.GetLogger().Warnw("手机号码不能为空",
-			"tel:", tel, "code", code,
+	if cont == nil {
+		config.GetLogger().Warnw("信息不能为空",
+			"cont:", cont,
 		)
-		c.JSON(http.StatusOK, s.FailWarp("手机号码与验证码不能为空"))
+		c.JSON(http.StatusOK, s.FailWarp("信息不能为空"))
 		return
 	}
 
 	user := model.NewUser()
 
-	err, data := user.GetVerifyCodeData(tel, code)
+	err, data := user.GetVerifyCodeData(string(cont))
 	if err != nil {
 		config.GetLogger().Warnw("验证手机验证码失败",
 			"err", err.Error(),
@@ -122,9 +115,9 @@ func (s *User) VerifyCodeHandler(c *gin.Context) {
 }
 
 func (s *User) UserInfoHandler(c *gin.Context) {
-	userID := c.Query("user_id")
+	userID, _ := ioutil.ReadAll(c.Request.Body)
 
-	if userID == "" {
+	if userID == nil {
 		config.GetLogger().Warnw("用户ID不能为空",
 			"userID:", userID,
 		)
@@ -134,7 +127,7 @@ func (s *User) UserInfoHandler(c *gin.Context) {
 
 	user := model.NewUser()
 
-	err, data := user.GetUserInfoData(userID)
+	err, data := user.GetUserInfoData(string(userID))
 	if err != nil {
 		config.GetLogger().Warnw("获取用户基本信息失败",
 			"err", err.Error(),

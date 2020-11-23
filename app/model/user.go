@@ -42,7 +42,7 @@ func (u *User) login(cont string) (err error) {
 	if err != nil {
 		data.IsLogin = false
 		config.GetLogger().Warnw("登录数据解析失败",
-			"err", err.Error(),
+			"err", err.Error,
 		)
 		return err
 	}
@@ -50,13 +50,13 @@ func (u *User) login(cont string) (err error) {
 	userPwd := user.UserPassword
 
 	//查询用户类型
-	row := db.Table("user_info").Where("user = ? AND password = ?", userName, userPwd).Select("type").Row()
+	row := db.Table("user_info").Where("user = ? AND password = ?", userName, userPwd).Select("type, id").Row()
 
-	err = row.Scan(&data.Type)
+	err = row.Scan(&data.Type, &data.UserID)
 	if err != nil {
 		data.IsLogin = false
 		config.GetLogger().Warnw("登录失败",
-			"err", err.Error(),
+			"err", err.Error,
 		)
 		return err
 	}
@@ -70,12 +70,25 @@ func (u *User) login(cont string) (err error) {
 /**
  * 用户注册
  */
-func (u *User) register(i *Info) (err error) {
+func (u *User) register(cont string) (err error) {
 	data := &u.RegisterData
 	count := 0
+
+	config.GetLogger().Info("开始解析注册数据")
+	user := new(Info)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		data.Registered = false
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error(),
+		)
+		return err
+	}
+	config.GetLogger().Info("解析注册数据结束")
+
 	config.GetLogger().Info("开始注册")
 	//查询用户名是否重复，重复返回错误，否则数据库里插入 一条数据
-	db.Table("user_info").Where("user = ?", i.User).Count(&count)
+	db.Table("user_info").Where("user = ?", user.User).Count(&count)
 
 	//用户名存在时，
 	if count != 0 {
@@ -86,8 +99,10 @@ func (u *User) register(i *Info) (err error) {
 		return errors.New("用户名已存在")
 	}
 
+	user.Head_portrait = "1"
+	user.Type = "0"
 	//数据库中新建一个用户
-	if err = db.Table("user_info").Create(i).Error; err != nil {
+	if err = db.Table("user_info").Create(user).Error; err != nil {
 		data.Registered = false
 		config.GetLogger().Warnw("注册失败",
 			"err", errors.New("新建用户失败"),
@@ -116,6 +131,16 @@ func randCode() string {
  */
 func (u *User) send(tel string) (err error) {
 	data := &u.SecureCodeData
+	user := new(ReceiveTel)
+	config.GetLogger().Info("开始解析数据")
+	err = json.Unmarshal([]byte(tel), &user)
+	if err != nil {
+		config.GetLogger().Warnw("登录数据解析失败",
+			"err", err.Error,
+		)
+		return err
+	}
+	config.GetLogger().Info("解析数据结束")
 	//生成6位随机验证码
 	config.GetLogger().Info("开始生成6位随机验证码")
 	code := randCode()
@@ -128,7 +153,7 @@ func (u *User) send(tel string) (err error) {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
-	request.PhoneNumbers = tel
+	request.PhoneNumbers = user.UserTel
 	request.SignName = "WIFI人体动作识别系统"
 	request.TemplateCode = "SMS_205458618"
 	request.TemplateParam = "{code:" + code + "}"
@@ -146,8 +171,8 @@ func (u *User) send(tel string) (err error) {
 
 	config.GetLogger().Info("发送验证码结束")
 	//redis储存验证码，1分钟
-	config.GetRedis().Del(tel)
-	config.GetRedis().Set(tel, code, 1*time.Minute)
+	config.GetRedis().Del(user.UserTel)
+	config.GetRedis().Set(user.UserTel, code, 1*time.Minute)
 
 	data.Sent = true
 
@@ -157,11 +182,23 @@ func (u *User) send(tel string) (err error) {
 /**
  * 验证码验证
  */
-func (u *User) verify(tel string, code string) (err error) {
+func (u *User) verify(cont string) (err error) {
 	data := &u.VerifyCodeData
+
+	config.GetLogger().Info("开始解析数据")
+	user := new(ReceiveTelAndCode)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		config.GetLogger().Warnw("登录数据解析失败",
+			"err", err.Error,
+		)
+		return err
+	}
+	config.GetLogger().Info("解析数据结束")
+
 	config.GetLogger().Info("开始获取redis中的验证码")
 
-	tempCode, errs := config.GetRedis().Get(tel).Result()
+	tempCode, errs := config.GetRedis().Get(user.UserTel).Result()
 
 	if errs != nil {
 		data.Verified = false
@@ -172,10 +209,9 @@ func (u *User) verify(tel string, code string) (err error) {
 	}
 
 	config.GetLogger().Info("获取redis中的验证码结束")
-	println(tel, code)
 
 	config.GetLogger().Info("开始校验验证码")
-	if tempCode != code {
+	if tempCode != user.UserSecureCode {
 		data.Verified = false
 		return errors.New("验证码错误")
 	} else {
@@ -190,12 +226,24 @@ func (u *User) verify(tel string, code string) (err error) {
  */
 func (u *User) info(userID string) (err error) {
 	data := &u.Info
+
+	config.GetLogger().Info("开始解析数据")
+	user := new(ReceiveID)
+	err = json.Unmarshal([]byte(userID), &user)
+	if err != nil {
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error(),
+		)
+		return err
+	}
+	config.GetLogger().Info("完成解析数据")
+
 	config.GetLogger().Info("开始获取个人信息")
 
-	row := db.Table("user_info").Where("id = ?", userID).
-		Select("user, password, tel, email, sex, type, head_portrait").Row()
+	row := db.Table("user_info").Where("id = ?", user.UserID).
+		Select("id, user, password, tel, email, sex, type, head_portrait").Row()
 
-	err = row.Scan(&data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
+	err = row.Scan(&data.ID, &data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
 		config.GetLogger().Warnw("获取个人信息失败",
 			"err", err,
@@ -323,10 +371,10 @@ func (u *User) GetLoginData(cont string) (err error, data LoginData) {
 	return
 }
 
-func (u *User) GetRegisterData(i *Info) (err error, data RegisterData) {
+func (u *User) GetRegisterData( cont string) (err error, data RegisterData) {
 	config.GetLogger().Info("开始获取注册数据")
 
-	err = u.register(i)
+	err = u.register(cont)
 
 	data = u.RegisterData
 
@@ -347,10 +395,10 @@ func (u *User) GetSecureCodeData(tel string) (err error, data SecureCodeData) {
 	return
 }
 
-func (u *User) GetVerifyCodeData(tel string, code string) (err error, data VerifyCodeData) {
+func (u *User) GetVerifyCodeData(cont string) (err error, data VerifyCodeData) {
 	config.GetLogger().Info("开始获取验证手机验证码数据")
 
-	err = u.verify(tel, code)
+	err = u.verify(cont)
 
 	data = u.VerifyCodeData
 
