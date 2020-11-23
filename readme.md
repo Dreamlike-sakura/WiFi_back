@@ -43,7 +43,7 @@ database:
 ## API文档
 ### 用户登录
 * URL: /login
-* Method: GET
+* Method: POST
 #### 前端发送
 ```
 {
@@ -64,7 +64,7 @@ database:
 ``` 
 ### 用户注册
 * URL: /register
-* Method: GET
+* Method: POST
 #### 前端发送
 ```
 {
@@ -89,8 +89,8 @@ head_portrait = "1"
 }
 ``` 
 ### 密码找回
-* URL: /find_password
-* Method: GET
+* URL: /verify
+* Method: POST
 #### 前端发送
 ```
 {
@@ -110,7 +110,7 @@ head_portrait = "1"
 ``` 
 ### 发送验证码
 * URL: /send_code
-* Method: GET
+* Method: POST
 #### 前端发送
 ```
 {
