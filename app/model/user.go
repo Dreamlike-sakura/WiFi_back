@@ -328,35 +328,54 @@ func (u *User) shakeInfo(userID string) (err error) {
 /**
  * 修改个人信息
  */
-//func (u *User) changeInfo(userID string) (err error) {
-//	data := &u.ModifyData
-//	dataInfo := &u.Info
-//	count := 0
-//	config.GetLogger().Info("开始获取个人信息")
-//
-//	if err = db.Table("user_info").Where("id = ?", userID).Count(&count).Error; err != nil || count == 0 {
-//		data.Modified = false
-//		config.GetLogger().Warnw("获取个人信息失败",
-//			"err", errors.New("获取个人信息失败"),
-//		)
-//		return
-//	}
-//
-//	db.Table("user_info").Model(&dataInfo).Updates(map[string]interface{}{})
-//	err = db.Model(&user).Updates(map[string]interface{}{"name": "hello", "age": 18, "actived": false})
-//
-//	err = row.Scan(&data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
-//	if err != nil {
-//		config.GetLogger().Warnw("获取个人信息失败",
-//			"err", err,
-//		)
-//		return
-//	}
-//
-//	config.GetLogger().Info("获取个人信息结束")
-//
-//	return
-//}
+func (u *User) changeInfo(cont string) (err error) {
+	data := &u.ModifyData
+	i := new(Info)
+	count := 0
+
+	config.GetLogger().Info("开始解析数据")
+	user := new(ReceiveChange)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		data.Modified = false
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error(),
+		)
+		return err
+	}
+	config.GetLogger().Info("完成解析数据")
+
+	config.GetLogger().Info("开始获取个人信息")
+	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error;
+	if err != nil || count == 0 {
+		data.Modified = false
+		config.GetLogger().Warnw("获取个人信息失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("获取个人信息结束")
+
+	i.User = user.UserName
+	i.Sex = user.UserSex
+	i.Tel = user.UserTel
+	i.Email = user.UserEmail
+	i.Head_portrait = user.HeadPortrait
+
+	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user":i.User, "sex":i.Sex, "tel":i.Tel, "email":i.Email, "head_portrait":i.Head_portrait}).Error
+	if err != nil {
+		data.Modified = false
+		config.GetLogger().Warnw("更新个人信息失败",
+			"err", err,
+		)
+		return
+	}
+	data.Modified = true
+
+	config.GetLogger().Info("更新个人信息结束")
+
+	return
+}
 
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(cont string) (err error, data LoginData) {
@@ -451,6 +470,18 @@ func (u *User) GetUserShakeData(userID string) (err error, data MovementData) {
 	data = u.MovementData
 
 	config.GetLogger().Info("获取用户摇手信息数据结束")
+
+	return
+}
+
+func (u *User) GetChangeData(cont string) (err error, data ModifyData) {
+	config.GetLogger().Info("开始修改用户信息")
+
+	err = u.changeInfo(cont)
+
+	data = u.ModifyData
+
+	config.GetLogger().Info("修改用户信息结束")
 
 	return
 }

@@ -60,6 +60,16 @@ type ReceiveRegister struct {
 	UserEmail    string `json:"user_email"`
 }
 
+//用于接受用户修改信息时的参数
+type ReceiveChange struct {
+	UserID       string `json:"user_id"`
+	UserName     string `json:"user_name"`
+	UserTel      string `json:"user_tel"`
+	UserEmail    string `json:"user_email"`
+	UserSex      string `json:"user_sex"`
+	HeadPortrait string `json:"head_portrait"`
+}
+
 //用户注册返回字段
 type RegisterData struct {
 	Registered bool `json:"registered"`
