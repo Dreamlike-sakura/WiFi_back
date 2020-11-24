@@ -2,14 +2,15 @@ package model
 
 //用户实例
 type User struct {
-	Info           Info
-	LoginData      LoginData
-	RegisterData   RegisterData
-	SecureCodeData SecureCodeData
-	VerifyCodeData VerifyCodeData
-	MovementData   MovementData
-	ModifyData     ModifyData
-	ChangePwdData  ChangePwdData
+	Info             Info
+	LoginData        LoginData
+	RegisterData     RegisterData
+	SecureCodeData   SecureCodeData
+	VerifyCodeData   VerifyCodeData
+	MovementData     MovementData
+	ModifyData       ModifyData
+	ChangePwdData    ChangePwdData
+	MovementListData []MovementListData
 }
 
 //用户基本信息
@@ -50,6 +51,12 @@ type ReceiveTel struct {
 type ReceiveTelAndCode struct {
 	UserTel        string `json:"tel"`
 	UserSecureCode string `json:"security_code"`
+}
+
+//用于接受用户查看动作列表
+type ReceiveMovementList struct {
+	UserID string `json:"user_id"`
+	Type   string `json:"type"`
 }
 
 //用于接受用户注册时的参数
@@ -111,4 +118,12 @@ type MovementData struct {
 	Phase          string `json:"phase"`
 	Abnormal       string `json:"abnormal"`
 	Time           string `json:"time"`
+}
+
+//用户动作信息返回列表
+type MovementListData struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	FileName string `json:"file_name"`
+	Time     string `json:"time"`
 }

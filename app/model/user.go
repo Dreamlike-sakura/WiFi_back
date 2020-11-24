@@ -18,14 +18,15 @@ import (
  */
 func NewUser() *User {
 	temp := &User{
-		Info:           Info{},
-		LoginData:      LoginData{},
-		RegisterData:   RegisterData{},
-		SecureCodeData: SecureCodeData{},
-		VerifyCodeData: VerifyCodeData{},
-		MovementData:   MovementData{},
-		ModifyData:     ModifyData{},
-		ChangePwdData:  ChangePwdData{},
+		Info:             Info{},
+		LoginData:        LoginData{},
+		RegisterData:     RegisterData{},
+		SecureCodeData:   SecureCodeData{},
+		VerifyCodeData:   VerifyCodeData{},
+		MovementData:     MovementData{},
+		ModifyData:       ModifyData{},
+		ChangePwdData:    ChangePwdData{},
+		MovementListData: []MovementListData{},
 	}
 
 	return temp
@@ -81,7 +82,7 @@ func (u *User) register(cont string) (err error) {
 	if err != nil {
 		data.Registered = false
 		config.GetLogger().Warnw("数据解析失败",
-			"err", err.Error(),
+			"err", err.Error,
 		)
 		return err
 	}
@@ -106,7 +107,7 @@ func (u *User) register(cont string) (err error) {
 	if err = db.Table("user_info").Create(user).Error; err != nil {
 		data.Registered = false
 		config.GetLogger().Warnw("注册失败",
-			"err", errors.New("新建用户失败"),
+			"err", err,
 		)
 		return
 	}
@@ -149,7 +150,7 @@ func (u *User) send(tel string) (err error) {
 
 	config.GetLogger().Info("开始发送验证码")
 	//检查用于发送验证码的手机号是否已经被注册
-	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", "LTAI4G4TXShUqRfEf1AnpaMx", "MH8TYZoKEJdnsgM63tSQQwMCIezKst")
+	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", "", "")
 
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
@@ -242,7 +243,7 @@ func (u *User) info(userID string) (err error) {
 	err = json.Unmarshal([]byte(userID), &user)
 	if err != nil {
 		config.GetLogger().Warnw("数据解析失败",
-			"err", err.Error(),
+			"err", err.Error,
 		)
 		return err
 	}
@@ -256,7 +257,7 @@ func (u *User) info(userID string) (err error) {
 	err = row.Scan(&data.ID, &data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
 		config.GetLogger().Warnw("获取个人信息失败",
-			"err", err,
+			"err", err.Error,
 		)
 		return
 	}
@@ -433,6 +434,31 @@ func (u *User) changePwd(cont string) (err error) {
 	data.Changed = true
 
 	config.GetLogger().Info("更新个人密码结束")
+
+	return
+}
+
+/**
+ * 查看用户动作信息列表
+ */
+func (u *User) movementList(cont string) (err error)  {
+	data := &u.MovementListData
+	i := new(MovementData)
+
+	config.GetLogger().Info("开始解析注册数据")
+	user := new(ReceiveMovementList)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error,
+		)
+		return err
+	}
+	config.GetLogger().Info("解析注册数据结束")
+
+	config.GetLogger().Info("开始分析")
+	println(data, i)
+	config.GetLogger().Info("分析结束")
 
 	return
 }
