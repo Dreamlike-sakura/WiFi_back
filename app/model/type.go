@@ -55,8 +55,10 @@ type ReceiveTelAndCode struct {
 
 //用于接受用户查看动作列表
 type ReceiveMovementList struct {
-	UserID string `json:"user_id"`
-	Type   string `json:"type"`
+	UserID   string `json:"user_id"`
+	Type     string `json:"type"`
+	PageNum  string `json:"page_num"`
+	PageSize string `json:"page_size"`
 }
 
 //用于接受用户注册时的参数

@@ -9,7 +9,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/sbinet/go-python"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -441,9 +443,8 @@ func (u *User) changePwd(cont string) (err error) {
 /**
  * 查看用户动作信息列表
  */
-func (u *User) movementList(cont string) (err error)  {
+func (u *User) movementList(cont string) (err error) {
 	data := &u.MovementListData
-	i := new(MovementData)
 
 	config.GetLogger().Info("开始解析注册数据")
 	user := new(ReceiveMovementList)
@@ -456,9 +457,94 @@ func (u *User) movementList(cont string) (err error)  {
 	}
 	config.GetLogger().Info("解析注册数据结束")
 
-	config.GetLogger().Info("开始分析")
-	println(data, i)
-	config.GetLogger().Info("分析结束")
+	config.GetLogger().Info("开始获取动作数据并分页")
+
+	table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
+	tempType, _:= strconv.Atoi(user.Type)
+	if tempType < 1 || tempType > 3 {
+		config.GetLogger().Warnw("类型错误",
+			"err:", errors.New("类型范围错误"),
+		)
+		return
+	}
+
+	rows, _ := db.Raw(
+		`SELECT TOP ? id, time
+				FROM ?
+				WHERE id > (SELECT MAX(id) FROM (SELECT TOP((? - 1) * ?) id FROM dealt_run ORDER BY id) as T)
+				ORDER BY id`,
+		user.PageSize,
+		table[tempType - 1],
+		user.PageNum,
+		user.PageSize,
+	).Rows()
+	defer rows.Close()
+	for rows.Next() {
+		tempData := new(MovementListData)
+		tempData.ID = ""
+		tempData.Type = user.Type
+		tempData.FileName = ""
+		tempData.Time = ""
+
+		_ = rows.Scan(&tempData.ID, &tempData.Time)
+		tempData.FileName = tempData.Time
+
+		*data = append(*data, *tempData)
+	}
+	config.GetLogger().Info("获取动作数据并分页结束")
+
+	return
+}
+
+/**
+ * go调用python
+ */
+func InsertBeforeSysPath(p string) string {
+	PyStr := python.PyString_FromString
+	GoStr := python.PyString_AS_STRING
+	sysModule := python.PyImport_ImportModule("sys")
+	path := sysModule.GetAttrString("path")
+	_ = python.PyList_Insert(path, 0, PyStr(p))
+	return GoStr(path.Repr())
+}
+
+func ImportModule(dir, name string) *python.PyObject {
+	PyStr := python.PyString_FromString
+
+	// import sys
+	sysModule := python.PyImport_ImportModule("sys")
+
+	// path = sys.path
+	path := sysModule.GetAttrString("path")
+
+	// path.insert(0, dir)
+	_ = python.PyList_Insert(path, 0, PyStr(dir))
+
+	// return __import__(name)
+	return python.PyImport_ImportModule(name)
+}
+
+func (u *User) goAmp(cont string) (err error) {
+	PyStr := python.PyString_FromString
+	GoStr := python.PyString_AS_STRING
+
+	//配置路径运行时需要更改参数
+	InsertBeforeSysPath("/Users/vonng/anaconda2/lib/python2.7/site-packages")
+	get_amp := ImportModule("/Users/vonng/Dev/go/src/gitlab.alibaba-inc.com/cplus", "get_amp")
+	amp := get_amp.GetAttrString("get_amp")
+
+	bArgs := python.PyTuple_New(1)
+	//传入的参数
+	err = python.PyTuple_SetItem(bArgs, 0, PyStr("xixi"))
+	if err != nil {
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error,
+		)
+		return err
+	}
+
+	res := amp.Call(bArgs, python.Py_None)
+	fmt.Printf("[CALL] b('xixi') = %s\n", GoStr(res))
 
 	return
 }
@@ -580,6 +666,30 @@ func (u *User) GetChangePwdData(cont string) (err error, data ChangePwdData) {
 	data = u.ChangePwdData
 
 	config.GetLogger().Info("修改用户信息密码结束")
+
+	return
+}
+
+func (u *User) GetAmpData(cont string) (err error, data ChangePwdData) {
+	config.GetLogger().Info("开始修改用户密码")
+
+	err = u.changePwd(cont)
+
+	data = u.ChangePwdData
+
+	config.GetLogger().Info("修改用户信息密码结束")
+
+	return
+}
+
+func (u *User) GetMovementListData(cont string) (err error, data []MovementListData) {
+	config.GetLogger().Info("开始查询用户动作列表")
+
+	err = u.movementList(cont)
+
+	data = u.MovementListData
+
+	config.GetLogger().Info("查询用户动作列表结束")
 
 	return
 }
