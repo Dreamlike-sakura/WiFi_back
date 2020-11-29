@@ -9,7 +9,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/sbinet/go-python"
 	"math/rand"
 	"strconv"
 	"time"
@@ -253,8 +252,8 @@ func (u *User) info(userID string) (err error) {
 
 	config.GetLogger().Info("开始获取个人信息")
 
-	row := db.Table("user_info").Where("id = ?", user.UserID).
-		Select("id, user, password, tel, email, sex, type, head_portrait").Row()
+	row := db.Table("user_info, head_portrait").Where("id = ? AND head_portrait = picture_id", user.UserID).
+		Select("id, user, password, tel, email, sex, type, url").Row()
 
 	err = row.Scan(&data.ID, &data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
@@ -499,55 +498,58 @@ func (u *User) movementList(cont string) (err error) {
 /**
  * go调用python
  */
-func InsertBeforeSysPath(p string) string {
-	PyStr := python.PyString_FromString
-	GoStr := python.PyString_AS_STRING
-	sysModule := python.PyImport_ImportModule("sys")
-	path := sysModule.GetAttrString("path")
-	_ = python.PyList_Insert(path, 0, PyStr(p))
-	return GoStr(path.Repr())
-}
-
-func ImportModule(dir, name string) *python.PyObject {
-	PyStr := python.PyString_FromString
-
-	// import sys
-	sysModule := python.PyImport_ImportModule("sys")
-
-	// path = sys.path
-	path := sysModule.GetAttrString("path")
-
-	// path.insert(0, dir)
-	_ = python.PyList_Insert(path, 0, PyStr(dir))
-
-	// return __import__(name)
-	return python.PyImport_ImportModule(name)
-}
-
-func (u *User) goAmp(cont string) (err error) {
-	PyStr := python.PyString_FromString
-	GoStr := python.PyString_AS_STRING
-
-	//配置路径运行时需要更改参数
-	InsertBeforeSysPath("/Users/vonng/anaconda2/lib/python2.7/site-packages")
-	get_amp := ImportModule("/Users/vonng/Dev/go/src/gitlab.alibaba-inc.com/cplus", "get_amp")
-	amp := get_amp.GetAttrString("get_amp")
-
-	bArgs := python.PyTuple_New(1)
-	//传入的参数
-	err = python.PyTuple_SetItem(bArgs, 0, PyStr("xixi"))
-	if err != nil {
-		config.GetLogger().Warnw("数据解析失败",
-			"err", err.Error,
-		)
-		return err
-	}
-
-	res := amp.Call(bArgs, python.Py_None)
-	fmt.Printf("[CALL] b('xixi') = %s\n", GoStr(res))
-
-	return
-}
+//func init() {
+//	err := python.Initialize()
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//}
+//
+//var PyStr = python.PyString_FromString
+//var GoStr = python.PyString_AS_STRING
+//
+//func InsertBeforeSysPath(p string) string {
+//	sysModule := python.PyImport_ImportModule("sys")
+//	path := sysModule.GetAttrString("path")
+//	_ = python.PyList_Insert(path, 0, PyStr(p))
+//	return GoStr(path.Repr())
+//}
+//
+//func ImportModule(dir, name string) *python.PyObject {
+//	// import sys
+//	sysModule := python.PyImport_ImportModule("sys")
+//
+//	// path = sys.path
+//	path := sysModule.GetAttrString("path")
+//
+//	// path.insert(0, dir)
+//	_ = python.PyList_Insert(path, 0, PyStr(dir))
+//
+//	// return __import__(name)
+//	return python.PyImport_ImportModule(name)
+//}
+//
+//func (u *User) goAmp(cont string) (err error) {
+//	//配置路径运行时需要更改参数
+//	InsertBeforeSysPath("/Users/vonng/anaconda2/lib/python2.7/site-packages")
+//	get_amp := ImportModule("/Users/vonng/Dev/go/src/gitlab.alibaba-inc.com/cplus", "get_amp")
+//	amp := get_amp.GetAttrString("get_amp")
+//
+//	bArgs := python.PyTuple_New(1)
+//	//传入的参数
+//	err = python.PyTuple_SetItem(bArgs, 0, PyStr("xixi"))
+//	if err != nil {
+//		config.GetLogger().Warnw("数据解析失败",
+//			"err", err.Error,
+//		)
+//		return err
+//	}
+//
+//	res := amp.Call(bArgs, python.Py_None)
+//	fmt.Printf("[CALL] b('xixi') = %s\n", GoStr(res))
+//
+//	return
+//}
 
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(cont string) (err error, data LoginData) {
