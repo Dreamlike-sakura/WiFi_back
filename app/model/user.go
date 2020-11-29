@@ -458,8 +458,14 @@ func (u *User) movementList(cont string) (err error) {
 
 	config.GetLogger().Info("开始获取动作数据并分页")
 
-	table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
-	tempType, _:= strconv.Atoi(user.Type)
+	//table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
+	tempType, err := strconv.Atoi(user.Type)
+	if err != nil {
+		config.GetLogger().Warnw("类型错误",
+			"err:", err,
+		)
+		return
+	}
 	if tempType < 1 || tempType > 3 {
 		config.GetLogger().Warnw("类型错误",
 			"err:", errors.New("类型范围错误"),
@@ -467,16 +473,19 @@ func (u *User) movementList(cont string) (err error) {
 		return
 	}
 
-	rows, _ := db.Raw(
-		`SELECT TOP ? id, time
-				FROM ?
-				WHERE id > (SELECT MAX(id) FROM (SELECT TOP((? - 1) * ?) id FROM dealt_run ORDER BY id) as T)
-				ORDER BY id`,
-		user.PageSize,
-		table[tempType - 1],
-		user.PageNum,
-		user.PageSize,
+	rows, err := db.Raw(
+		`SELECT id, time FROM dealt_run WHERE uid = ? ORDER BY time LIMIT ?, ?`,
+		user.UserID,
+		(user.PageNum - 1) * user.PageSize,
+		user.PageNum * user.PageSize,
 	).Rows()
+	if err != nil {
+		config.GetLogger().Warnw("数据库数据错误",
+			"err:", err,
+		)
+		return
+	}
+
 	defer rows.Close()
 	for rows.Next() {
 		tempData := new(MovementListData)
@@ -485,7 +494,14 @@ func (u *User) movementList(cont string) (err error) {
 		tempData.FileName = ""
 		tempData.Time = ""
 
-		_ = rows.Scan(&tempData.ID, &tempData.Time)
+		err = rows.Scan(&tempData.ID, &tempData.Time)
+		if err != nil {
+			config.GetLogger().Warnw("赋值错误",
+				"err:", err,
+			)
+			return
+		}
+
 		tempData.FileName = tempData.Time
 
 		*data = append(*data, *tempData)
