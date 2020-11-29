@@ -372,7 +372,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	i.Sex = user.UserSex
 	i.Tel = user.UserTel
 	i.Email = user.UserEmail
-	
+
 	row := db.Raw(`SELECT picture_id FROM head_portrait WHERE url = ?`, user.HeadPortrait).Row()
 	err = row.Scan(&i.Head_portrait)
 	if err != nil {
@@ -523,6 +523,44 @@ func (u *User) movementList(cont string) (err error) {
 /**
  * go调用python
  */
+//func init() {
+//	err := python.Initialize()
+//	if err != nil {
+//		log.Panic(err.Error())
+//	}
+//}
+//
+//func (u *User) goAmp(cont string) (err error) {
+//	module := python.PyImport_ImportModule("read_bfee_file")
+//	if module == nil {
+//		config.GetLogger().Warnw("could not import 'read_bfee_file'",
+//			"err", errors.New("could not import 'read_bfee_file'"),
+//		)
+//		return err
+//	}
+//
+//	getAmp := module.GetAttrString("get_amp")
+//	if getAmp == nil {
+//		config.GetLogger().Warnw("could not getattr 'get_amp'",
+//			"err", errors.New("could not getattr 'get_amp'"),
+//		)
+//		return err
+//	}
+//	defer getAmp.DecRef()
+//
+//	cf := getAmp.CallFunction()
+//	if cf == nil {
+//		config.GetLogger().Warnw("could not call 'read_bfee_file.get_amp()'",
+//			"err", errors.New("could not call 'read_bfee_file.get_amp()'"),
+//		)
+//		return err
+//	}
+//	fmt.Printf("%s\n", python.PyString_AsString(cf))
+//	cf.DecRef()
+//
+//	return
+//}
+
 //func init() {
 //	err := python.Initialize()
 //	if err != nil {
