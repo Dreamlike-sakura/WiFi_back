@@ -372,7 +372,16 @@ func (u *User) changeInfo(cont string) (err error) {
 	i.Sex = user.UserSex
 	i.Tel = user.UserTel
 	i.Email = user.UserEmail
-	i.Head_portrait = user.HeadPortrait
+	
+	row := db.Raw(`SELECT picture_id FROM head_portrait WHERE url = ?`, user.HeadPortrait).Row()
+	err = row.Scan(&i.Head_portrait)
+	if err != nil {
+		data.Modified = false
+		config.GetLogger().Warnw("更新个人信息失败",
+			"err", err,
+		)
+		return
+	}
 
 	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user": i.User, "sex": i.Sex, "tel": i.Tel, "email": i.Email, "head_portrait": i.Head_portrait}).Error
 	if err != nil {
