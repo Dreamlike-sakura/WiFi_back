@@ -2,16 +2,17 @@ package model
 
 //用户实例
 type User struct {
-	Info             Info
-	LoginData        LoginData
-	RegisterData     RegisterData
-	SecureCodeData   SecureCodeData
-	VerifyCodeData   VerifyCodeData
-	MovementData     MovementData
-	ModifyData       ModifyData
-	ChangePwdData    ChangePwdData
-	MovementListData []MovementListData
-	CheckMovement    CheckMovement
+	Info              Info
+	LoginData         LoginData
+	RegisterData      RegisterData
+	SecureCodeData    SecureCodeData
+	VerifyCodeData    VerifyCodeData
+	MovementData      MovementData
+	ModifyData        ModifyData
+	ChangePwdData     ChangePwdData
+	MovementListData  []MovementListData
+	CheckMovement     CheckMovement
+	CheckHeadPortrait []CheckHeadPortrait
 }
 
 //用户基本信息
@@ -121,6 +122,12 @@ type ChangePwdData struct {
 //用户查看动作信息返回字段
 type CheckMovement struct {
 	Content [][]float64 `json:"content"`
+}
+
+//用户查看头像列表返回字段
+type CheckHeadPortrait struct {
+	ID  string `json:"id"`
+	Url string `json:"url"`
 }
 
 //动作信息返回字段

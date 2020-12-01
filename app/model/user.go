@@ -21,16 +21,17 @@ import (
  */
 func NewUser() *User {
 	temp := &User{
-		Info:             Info{},
-		LoginData:        LoginData{},
-		RegisterData:     RegisterData{},
-		SecureCodeData:   SecureCodeData{},
-		VerifyCodeData:   VerifyCodeData{},
-		MovementData:     MovementData{},
-		ModifyData:       ModifyData{},
-		ChangePwdData:    ChangePwdData{},
-		MovementListData: []MovementListData{},
-		CheckMovement:    CheckMovement{},
+		Info:              Info{},
+		LoginData:         LoginData{},
+		RegisterData:      RegisterData{},
+		SecureCodeData:    SecureCodeData{},
+		VerifyCodeData:    VerifyCodeData{},
+		MovementData:      MovementData{},
+		ModifyData:        ModifyData{},
+		ChangePwdData:     ChangePwdData{},
+		MovementListData:  []MovementListData{},
+		CheckMovement:     CheckMovement{},
+		CheckHeadPortrait: []CheckHeadPortrait{},
 	}
 
 	return temp
@@ -428,40 +429,149 @@ func (u *User) movementList(cont string) (err error) {
 		return
 	}
 
-	rows, err := db.Raw(
-		`SELECT id, time FROM dealt_run WHERE uid = ? ORDER BY time LIMIT ?, ?`,
-		user.UserID,
-		(user.PageNum-1)*user.PageSize,
-		user.PageNum*user.PageSize,
-	).Rows()
-	if err != nil {
-		config.GetLogger().Warnw("数据库数据错误",
-			"err:", err,
+	if tempType == 1 {
+		rows, err := db.Raw(
+			`SELECT id, time FROM dealt_run WHERE uid = ? ORDER BY time LIMIT ?, ?`,
+			user.UserID,
+			(user.PageNum-1)*user.PageSize,
+			user.PageNum*user.PageSize,
+		).Rows()
+		if err != nil {
+			config.GetLogger().Warnw("数据库数据错误",
+				"err:", err,
+			)
+			return err
+		}
+
+		defer rows.Close()
+		for rows.Next() {
+			tempData := new(MovementListData)
+			tempData.ID = ""
+			tempData.Type = user.Type
+			tempData.FileName = ""
+			tempData.Time = ""
+
+			err = rows.Scan(&tempData.ID, &tempData.Time)
+			if err != nil {
+				config.GetLogger().Warnw("赋值错误",
+					"err:", err,
+				)
+				return err
+			}
+
+			tempData.FileName = tempData.Time
+
+			*data = append(*data, *tempData)
+		}
+	} else if tempType == 2 {
+		rows, err := db.Raw(
+			`SELECT id, time FROM dealt_walk WHERE uid = ? ORDER BY time LIMIT ?, ?`,
+			user.UserID,
+			(user.PageNum-1)*user.PageSize,
+			user.PageNum*user.PageSize,
+		).Rows()
+		if err != nil {
+			config.GetLogger().Warnw("数据库数据错误",
+				"err:", err,
+			)
+			return err
+		}
+
+		defer rows.Close()
+		for rows.Next() {
+			tempData := new(MovementListData)
+			tempData.ID = ""
+			tempData.Type = user.Type
+			tempData.FileName = ""
+			tempData.Time = ""
+
+			err = rows.Scan(&tempData.ID, &tempData.Time)
+			if err != nil {
+				config.GetLogger().Warnw("赋值错误",
+					"err:", err,
+				)
+				return err
+			}
+
+			tempData.FileName = tempData.Time
+
+			*data = append(*data, *tempData)
+		}
+	} else if tempType == 3 {
+		rows, err := db.Raw(
+			`SELECT id, time FROM dealt_shakehand WHERE uid = ? ORDER BY time LIMIT ?, ?`,
+			user.UserID,
+			(user.PageNum-1)*user.PageSize,
+			user.PageNum*user.PageSize,
+		).Rows()
+		if err != nil {
+			config.GetLogger().Warnw("数据库数据错误",
+				"err:", err,
+			)
+			return err
+		}
+
+		defer rows.Close()
+		for rows.Next() {
+			tempData := new(MovementListData)
+			tempData.ID = ""
+			tempData.Type = user.Type
+			tempData.FileName = ""
+			tempData.Time = ""
+
+			err = rows.Scan(&tempData.ID, &tempData.Time)
+			if err != nil {
+				config.GetLogger().Warnw("赋值错误",
+					"err:", err,
+				)
+				return err
+			}
+
+			tempData.FileName = tempData.Time
+
+			*data = append(*data, *tempData)
+		}
+	}
+
+	config.GetLogger().Info("获取动作数据并分页结束")
+
+	return
+}
+
+/**
+ * 查看头像列表信息
+ */
+func (u *User) headPortraitList() (err error) {
+	data := &u.CheckHeadPortrait
+
+	config.GetLogger().Info("开始获取头像信息")
+
+	rows, errs := db.Table("head_portrait").Select("picture_id, url").Rows()
+	if errs != nil {
+		config.GetLogger().Warnw("获取头像信息失败",
+			"err", errs.Error,
 		)
 		return
 	}
 
-	defer rows.Close()
 	for rows.Next() {
-		tempData := new(MovementListData)
-		tempData.ID = ""
-		tempData.Type = user.Type
-		tempData.FileName = ""
-		tempData.Time = ""
+		temp := new(CheckHeadPortrait)
+		temp.ID = ""
+		temp.Url = ""
 
-		err = rows.Scan(&tempData.ID, &tempData.Time)
+		err = rows.Scan(&temp.ID, &temp.Url)
 		if err != nil {
-			config.GetLogger().Warnw("赋值错误",
+			config.GetLogger().Warnw("数据获取错误",
 				"err:", err,
 			)
-			return
+			return err
 		}
 
-		tempData.FileName = tempData.Time
-
-		*data = append(*data, *tempData)
+		*data = append(*data, *temp)
 	}
-	config.GetLogger().Info("获取动作数据并分页结束")
+
+
+	config.GetLogger().Info("获取头像信息结束")
 
 	return
 }
@@ -592,7 +702,7 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 
 	//dir := "../../data/wifi"
 	dir := "D:\\20study\\2020project\\back\\data\\wifi\\"
-	fileStr :=  path.Join(dir, user.FileName)
+	fileStr := path.Join(dir, user.FileName)
 	//fileStr := dir + user.FileName
 
 	fmt.Println(fileStr)
@@ -720,6 +830,18 @@ func (u *User) GetAPData(cont string) (err error, data CheckMovement) {
 	data = u.CheckMovement
 
 	config.GetLogger().Info("查询用户动作列表")
+
+	return
+}
+
+func (u *User) GetHeadPortraitData() (err error, data []CheckHeadPortrait) {
+	config.GetLogger().Info("开始查询头像列表")
+
+	err = u.headPortraitList()
+
+	data = u.CheckHeadPortrait
+
+	config.GetLogger().Info("查询头像列表结束")
 
 	return
 }

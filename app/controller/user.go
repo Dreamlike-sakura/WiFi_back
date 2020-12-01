@@ -239,3 +239,19 @@ func (s *User) MovementAmpPhaseHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
 
+func (s *User) HeadPortraitListHandler(c *gin.Context) {
+
+	user := model.NewUser()
+
+	err, data := user.GetHeadPortraitData()
+	if err != nil {
+		config.GetLogger().Warnw("查询头像列表失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
