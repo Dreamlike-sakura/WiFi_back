@@ -516,8 +516,8 @@ func (u *User) goPy(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析注册数据结束")
 
-	//args := []string{"read_bfee_file.py", user.File}
-	cmd := exec.Command("python", "read_bfee_file.py")
+	args := []string{"read_bfee_file.py", user.File}
+	cmd := exec.Command("python", args...)
 	err = cmd.Run()
 	if err != nil {
 		return err
@@ -525,97 +525,6 @@ func (u *User) goPy(cont string) (err error) {
 
 	return
 }
-
-//func init() {
-//	err := python.Initialize()
-//	if err != nil {
-//		log.Panic(err.Error())
-//	}
-//}
-//
-//func (u *User) goAmp(cont string) (err error) {
-//	module := python.PyImport_ImportModule("read_bfee_file")
-//	if module == nil {
-//		config.GetLogger().Warnw("could not import 'read_bfee_file'",
-//			"err", errors.New("could not import 'read_bfee_file'"),
-//		)
-//		return err
-//	}
-//
-//	getAmp := module.GetAttrString("get_amp")
-//	if getAmp == nil {
-//		config.GetLogger().Warnw("could not getattr 'get_amp'",
-//			"err", errors.New("could not getattr 'get_amp'"),
-//		)
-//		return err
-//	}
-//	defer getAmp.DecRef()
-//
-//	cf := getAmp.CallFunction()
-//	if cf == nil {
-//		config.GetLogger().Warnw("could not call 'read_bfee_file.get_amp()'",
-//			"err", errors.New("could not call 'read_bfee_file.get_amp()'"),
-//		)
-//		return err
-//	}
-//	fmt.Printf("%s\n", python.PyString_AsString(cf))
-//	cf.DecRef()
-//
-//	return
-//}
-
-//func init() {
-//	err := python.Initialize()
-//	if err != nil {
-//		panic(err.Error())
-//	}
-//}
-//
-//var PyStr = python.PyString_FromString
-//var GoStr = python.PyString_AS_STRING
-//
-//func InsertBeforeSysPath(p string) string {
-//	sysModule := python.PyImport_ImportModule("sys")
-//	path := sysModule.GetAttrString("path")
-//	_ = python.PyList_Insert(path, 0, PyStr(p))
-//	return GoStr(path.Repr())
-//}
-//
-//func ImportModule(dir, name string) *python.PyObject {
-//	// import sys
-//	sysModule := python.PyImport_ImportModule("sys")
-//
-//	// path = sys.path
-//	path := sysModule.GetAttrString("path")
-//
-//	// path.insert(0, dir)
-//	_ = python.PyList_Insert(path, 0, PyStr(dir))
-//
-//	// return __import__(name)
-//	return python.PyImport_ImportModule(name)
-//}
-//
-//func (u *User) goAmp(cont string) (err error) {
-//	//配置路径运行时需要更改参数
-//	InsertBeforeSysPath("/Users/vonng/anaconda2/lib/python2.7/site-packages")
-//	get_amp := ImportModule("/Users/vonng/Dev/go/src/gitlab.alibaba-inc.com/cplus", "get_amp")
-//	amp := get_amp.GetAttrString("get_amp")
-//
-//	bArgs := python.PyTuple_New(1)
-//	//传入的参数
-//	err = python.PyTuple_SetItem(bArgs, 0, PyStr("xixi"))
-//	if err != nil {
-//		config.GetLogger().Warnw("数据解析失败",
-//			"err", err.Error,
-//		)
-//		return err
-//	}
-//
-//	res := amp.Call(bArgs, python.Py_None)
-//	fmt.Printf("[CALL] b('xixi') = %s\n", GoStr(res))
-//
-//	return
-//}
 
 /**
  * go读取文件
