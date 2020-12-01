@@ -505,7 +505,8 @@ func (u *User) headPortraitList() (err error) {
  * go调用python
  */
 func (u *User) goPy(cont string) (err error) {
-	config.GetLogger().Info("开始解析注册数据")
+	data := &u.GoPyData
+	config.GetLogger().Info("开始解析原始数据")
 	user := new(ReceiveGoPyData)
 	err = json.Unmarshal([]byte(cont), &user)
 	if err != nil {
@@ -514,16 +515,24 @@ func (u *User) goPy(cont string) (err error) {
 		)
 		return err
 	}
-	config.GetLogger().Info("解析注册数据结束")
+	config.GetLogger().Info("解析原始数据结束")
 
-	println(user.File)
+	args := []string{"read_bfee_file.py", user.File}
 
-	args := []string{"read_bfee_file.py ", user.File}
+	fmt.Println(args)
+
 	cmd := exec.Command("python", args...)
+	cmd.Dir = ".\\py\\"
+
 	err = cmd.Run()
 	if err != nil {
-		return err
+		data.Success = false
+		config.GetLogger().Warnw("执行python脚本失败",
+			"err", err,
+		)
+		return
 	}
+	data.Success = true
 
 	return
 }
@@ -692,13 +701,13 @@ func (u *User) GetHeadPortraitData() (err error, data []CheckHeadPortrait) {
 }
 
 func (u *User) GetGoPyData(cont string) (err error, data GoPyData) {
-	config.GetLogger().Info("开始查询头像列表")
+	config.GetLogger().Info("开始调用python")
 
 	err = u.goPy(cont)
 
 	data = u.GoPyData
 
-	config.GetLogger().Info("查询头像列表结束")
+	config.GetLogger().Info("调用python结束")
 
 	return
 }
