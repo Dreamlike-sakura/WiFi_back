@@ -11,6 +11,7 @@ type User struct {
 	ModifyData       ModifyData
 	ChangePwdData    ChangePwdData
 	MovementListData []MovementListData
+	CheckMovement    CheckMovement
 }
 
 //用户基本信息
@@ -51,6 +52,11 @@ type ReceiveTel struct {
 type ReceiveTelAndCode struct {
 	UserTel        string `json:"tel"`
 	UserSecureCode string `json:"security_code"`
+}
+
+//用于接受用户查看动作信息时的参数
+type ReceiveCheckMovement struct {
+	FileName string `json:"file_name"`
 }
 
 //用于接受用户查看动作列表
@@ -110,6 +116,11 @@ type ModifyData struct {
 //修改个人密码返回字段
 type ChangePwdData struct {
 	Changed bool `json:"changed"`
+}
+
+//用户查看动作信息返回字段
+type CheckMovement struct {
+	Content [][]float64 `json:"content"`
 }
 
 //动作信息返回字段

@@ -2,15 +2,17 @@ package model
 
 import (
 	"back/app/config"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"io/ioutil"
 	"math/rand"
+	"os/exec"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,6 +30,7 @@ func NewUser() *User {
 		ModifyData:       ModifyData{},
 		ChangePwdData:    ChangePwdData{},
 		MovementListData: []MovementListData{},
+		CheckMovement:    CheckMovement{},
 	}
 
 	return temp
@@ -49,8 +52,12 @@ func (u *User) login(cont string) (err error) {
 		)
 		return err
 	}
+
+	tempPwd := md5.Sum([]byte(user.UserPassword))
+	md5str := fmt.Sprintf("%x", tempPwd)
+
 	userName := user.UserName
-	userPwd := user.UserPassword
+	userPwd := md5str
 
 	//查询用户类型
 	row := db.Table("user_info").Where("user = ? AND password = ?", userName, userPwd).Select("type, id").Row()
@@ -102,6 +109,11 @@ func (u *User) register(cont string) (err error) {
 		return errors.New("用户名已存在")
 	}
 
+	//密码进行MD5加密
+	tempPwd := md5.Sum([]byte(user.Password))
+	md5str := fmt.Sprintf("%x", tempPwd)
+
+	user.Password = md5str
 	user.Head_portrait = "1"
 	user.Type = "0"
 	//数据库中新建一个用户
@@ -269,75 +281,6 @@ func (u *User) info(userID string) (err error) {
 }
 
 /**
- * 查看个人动作信息之跑步
- */
-func (u *User) runInfo(userID string) (err error) {
-	data := &u.MovementData
-	config.GetLogger().Info("开始查询跑步动作信息")
-
-	row := db.Table("dealt_run").Where("uid = ?", userID).
-		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
-
-	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
-	if err != nil {
-		config.GetLogger().Warnw("查询跑步动作信息失败",
-			"err", err,
-		)
-		return
-	}
-
-	config.GetLogger().Info("查询跑步动作信息结束")
-
-	return
-}
-
-/**
- * 查看个人动作信息之行走
- */
-func (u *User) walkInfo(userID string) (err error) {
-	data := &u.MovementData
-	config.GetLogger().Info("开始查询行走动作信息")
-
-	row := db.Table("dealt_walk").Where("uid = ?", userID).
-		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
-
-	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
-	if err != nil {
-		config.GetLogger().Warnw("查询行走动作信息失败",
-			"err", err,
-		)
-		return
-	}
-
-	config.GetLogger().Info("查询行走动作信息结束")
-
-	return
-}
-
-/**
- * 查看个人动作信息之摇手
- */
-func (u *User) shakeInfo(userID string) (err error) {
-	data := &u.MovementData
-	config.GetLogger().Info("开始查询摇手动作信息")
-
-	row := db.Table("dealt_shakehand").Where("uid = ?", userID).
-		Select("origin_amplitude, amplitude, origin_phase, phase, abnormal, time").Row()
-
-	err = row.Scan(&data.Amplitude, &data.DealtAmplitude, &data.Phase, &data.DealtPhase, &data.Abnormal, &data.Time)
-	if err != nil {
-		config.GetLogger().Warnw("查询摇手动作信息失败",
-			"err", err,
-		)
-		return
-	}
-
-	config.GetLogger().Info("查询摇手动作信息结束")
-
-	return
-}
-
-/**
  * 修改个人信息
  */
 func (u *User) changeInfo(cont string) (err error) {
@@ -431,7 +374,10 @@ func (u *User) changePwd(cont string) (err error) {
 
 	config.GetLogger().Info("开始更新个人密码")
 
-	i.Password = user.UserPassword
+	tempPwd := md5.Sum([]byte(user.UserPassword))
+	md5str := fmt.Sprintf("%x", tempPwd)
+
+	i.Password = md5str
 
 	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"password": i.Password}).Error
 	if err != nil {
@@ -485,8 +431,8 @@ func (u *User) movementList(cont string) (err error) {
 	rows, err := db.Raw(
 		`SELECT id, time FROM dealt_run WHERE uid = ? ORDER BY time LIMIT ?, ?`,
 		user.UserID,
-		(user.PageNum - 1) * user.PageSize,
-		user.PageNum * user.PageSize,
+		(user.PageNum-1)*user.PageSize,
+		user.PageNum*user.PageSize,
 	).Rows()
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
@@ -523,6 +469,19 @@ func (u *User) movementList(cont string) (err error) {
 /**
  * go调用python
  */
+func goAmp(filePath string) (err error) {
+	args := []string{"read_bfee_file.py", filePath}
+	out, err := exec.Command("python", args...).Output()
+	if err != nil {
+		return
+	}
+	result := string(out)
+	if strings.Index(result, "success") != 0 {
+		err = errors.New(fmt.Sprintf("read_bfee_file.py error：%s", result))
+	}
+	return
+}
+
 //func init() {
 //	err := python.Initialize()
 //	if err != nil {
@@ -614,6 +573,48 @@ func (u *User) movementList(cont string) (err error) {
 //	return
 //}
 
+/**
+ * go读取文件
+ */
+func (u *User) getAmpOrPhase(cont string) (err error) {
+	data := &u.CheckMovement
+
+	config.GetLogger().Info("开始解析文件名")
+	user := new(ReceiveCheckMovement)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		config.GetLogger().Warnw("文件名解析失败",
+			"err", err.Error,
+		)
+		return err
+	}
+	config.GetLogger().Info("解析文件名结束")
+
+	//dir := "../../data/wifi"
+	dir := "D:\\20study\\2020project\\back\\data\\wifi\\"
+	fileStr :=  path.Join(dir, user.FileName)
+	//fileStr := dir + user.FileName
+
+	fmt.Println(fileStr)
+
+	f, errs := ioutil.ReadFile(fileStr)
+	if errs != nil {
+		fmt.Println("read fail", errs)
+	}
+
+	config.GetLogger().Info("开始解析矩阵数据")
+	err = json.Unmarshal([]byte(f), &data.Content)
+	if err != nil {
+		config.GetLogger().Warnw("矩阵数据解析失败",
+			"err", err,
+		)
+		return err
+	}
+	config.GetLogger().Info("矩阵数据解析结束")
+
+	return
+}
+
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(cont string) (err error, data LoginData) {
 	config.GetLogger().Info("开始获取登录数据")
@@ -675,42 +676,6 @@ func (u *User) GetUserInfoData(userID string) (err error, data Info) {
 	return
 }
 
-func (u *User) GetUserRunData(userID string) (err error, data MovementData) {
-	config.GetLogger().Info("开始获取用户跑步信息数据")
-
-	err = u.runInfo(userID)
-
-	data = u.MovementData
-
-	config.GetLogger().Info("获取用户跑步信息数据结束")
-
-	return
-}
-
-func (u *User) GetUserWalkData(userID string) (err error, data MovementData) {
-	config.GetLogger().Info("开始获取用户跑步信息数据")
-
-	err = u.walkInfo(userID)
-
-	data = u.MovementData
-
-	config.GetLogger().Info("获取用户跑步信息数据结束")
-
-	return
-}
-
-func (u *User) GetUserShakeData(userID string) (err error, data MovementData) {
-	config.GetLogger().Info("开始获取用户摇手信息数据")
-
-	err = u.shakeInfo(userID)
-
-	data = u.MovementData
-
-	config.GetLogger().Info("获取用户摇手信息数据结束")
-
-	return
-}
-
 func (u *User) GetChangeData(cont string) (err error, data ModifyData) {
 	config.GetLogger().Info("开始修改用户信息")
 
@@ -735,18 +700,6 @@ func (u *User) GetChangePwdData(cont string) (err error, data ChangePwdData) {
 	return
 }
 
-func (u *User) GetAmpData(cont string) (err error, data ChangePwdData) {
-	config.GetLogger().Info("开始修改用户密码")
-
-	err = u.changePwd(cont)
-
-	data = u.ChangePwdData
-
-	config.GetLogger().Info("修改用户信息密码结束")
-
-	return
-}
-
 func (u *User) GetMovementListData(cont string) (err error, data []MovementListData) {
 	config.GetLogger().Info("开始查询用户动作列表")
 
@@ -755,6 +708,18 @@ func (u *User) GetMovementListData(cont string) (err error, data []MovementListD
 	data = u.MovementListData
 
 	config.GetLogger().Info("查询用户动作列表结束")
+
+	return
+}
+
+func (u *User) GetAPData(cont string) (err error, data CheckMovement) {
+	config.GetLogger().Info("开始查询用户动作")
+
+	err = u.getAmpOrPhase(cont)
+
+	data = u.CheckMovement
+
+	config.GetLogger().Info("查询用户动作列表")
 
 	return
 }
