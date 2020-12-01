@@ -516,7 +516,9 @@ func (u *User) goPy(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析注册数据结束")
 
-	args := []string{"read_bfee_file.py", user.File}
+	println(user.File)
+
+	args := []string{"read_bfee_file.py ", user.File}
 	cmd := exec.Command("python", args...)
 	err = cmd.Run()
 	if err != nil {
