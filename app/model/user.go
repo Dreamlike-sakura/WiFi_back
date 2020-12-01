@@ -414,7 +414,7 @@ func (u *User) movementList(cont string) (err error) {
 
 	config.GetLogger().Info("开始获取动作数据并分页")
 
-	//table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
+	table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
 	tempType, err := strconv.Atoi(user.Type)
 	if err != nil {
 		config.GetLogger().Warnw("类型错误",
@@ -429,108 +429,34 @@ func (u *User) movementList(cont string) (err error) {
 		return
 	}
 
-	if tempType == 1 {
-		rows, err := db.Raw(
-			`SELECT id, time FROM dealt_run WHERE uid = ? ORDER BY time LIMIT ?, ?`,
-			user.UserID,
-			(user.PageNum-1)*user.PageSize,
-			user.PageNum*user.PageSize,
-		).Rows()
+	rows, err := db.Table(table[tempType - 1]).Where("uid = ?", user.UserID).
+		Order("time").Limit(user.PageNum*user.PageSize).Offset((user.PageNum-1)*user.PageSize).Select("id, time").Rows()
+	if err != nil {
+		config.GetLogger().Warnw("数据库数据错误",
+			"err:", err,
+		)
+		return err
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		tempData := new(MovementListData)
+		tempData.ID = ""
+		tempData.Type = user.Type
+		tempData.FileName = ""
+		tempData.Time = ""
+
+		err = rows.Scan(&tempData.ID, &tempData.Time)
 		if err != nil {
-			config.GetLogger().Warnw("数据库数据错误",
+			config.GetLogger().Warnw("赋值错误",
 				"err:", err,
 			)
 			return err
 		}
 
-		defer rows.Close()
-		for rows.Next() {
-			tempData := new(MovementListData)
-			tempData.ID = ""
-			tempData.Type = user.Type
-			tempData.FileName = ""
-			tempData.Time = ""
+		tempData.FileName = tempData.Time
 
-			err = rows.Scan(&tempData.ID, &tempData.Time)
-			if err != nil {
-				config.GetLogger().Warnw("赋值错误",
-					"err:", err,
-				)
-				return err
-			}
-
-			tempData.FileName = tempData.Time
-
-			*data = append(*data, *tempData)
-		}
-	} else if tempType == 2 {
-		rows, err := db.Raw(
-			`SELECT id, time FROM dealt_walk WHERE uid = ? ORDER BY time LIMIT ?, ?`,
-			user.UserID,
-			(user.PageNum-1)*user.PageSize,
-			user.PageNum*user.PageSize,
-		).Rows()
-		if err != nil {
-			config.GetLogger().Warnw("数据库数据错误",
-				"err:", err,
-			)
-			return err
-		}
-
-		defer rows.Close()
-		for rows.Next() {
-			tempData := new(MovementListData)
-			tempData.ID = ""
-			tempData.Type = user.Type
-			tempData.FileName = ""
-			tempData.Time = ""
-
-			err = rows.Scan(&tempData.ID, &tempData.Time)
-			if err != nil {
-				config.GetLogger().Warnw("赋值错误",
-					"err:", err,
-				)
-				return err
-			}
-
-			tempData.FileName = tempData.Time
-
-			*data = append(*data, *tempData)
-		}
-	} else if tempType == 3 {
-		rows, err := db.Raw(
-			`SELECT id, time FROM dealt_shakehand WHERE uid = ? ORDER BY time LIMIT ?, ?`,
-			user.UserID,
-			(user.PageNum-1)*user.PageSize,
-			user.PageNum*user.PageSize,
-		).Rows()
-		if err != nil {
-			config.GetLogger().Warnw("数据库数据错误",
-				"err:", err,
-			)
-			return err
-		}
-
-		defer rows.Close()
-		for rows.Next() {
-			tempData := new(MovementListData)
-			tempData.ID = ""
-			tempData.Type = user.Type
-			tempData.FileName = ""
-			tempData.Time = ""
-
-			err = rows.Scan(&tempData.ID, &tempData.Time)
-			if err != nil {
-				config.GetLogger().Warnw("赋值错误",
-					"err:", err,
-				)
-				return err
-			}
-
-			tempData.FileName = tempData.Time
-
-			*data = append(*data, *tempData)
-		}
+		*data = append(*data, *tempData)
 	}
 
 	config.GetLogger().Info("获取动作数据并分页结束")
@@ -700,8 +626,8 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析文件名结束")
 
-	//dir := "../../data/wifi"
-	dir := "D:\\20study\\2020project\\back\\data\\wifi\\"
+	//dir := "D:\20study\2020project\back\"
+	dir := ".\\data\\wifi\\"
 	fileStr := path.Join(dir, user.FileName)
 	//fileStr := dir + user.FileName
 
