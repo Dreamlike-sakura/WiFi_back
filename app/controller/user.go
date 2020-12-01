@@ -255,3 +255,27 @@ func (s *User) HeadPortraitListHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
 
+func (s *User) GoPyHandler(c *gin.Context) {
+	cont, _ := ioutil.ReadAll(c.Request.Body)
+
+	if cont == nil {
+		config.GetLogger().Warnw("信息不能为空",
+			"cont:", cont,
+		)
+		c.JSON(http.StatusOK, s.FailWarp("信息不能为空"))
+		return
+	}
+
+	user := model.NewUser()
+
+	err, data := user.GetGoPyData(string(cont))
+	if err != nil {
+		config.GetLogger().Warnw("调用python失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}

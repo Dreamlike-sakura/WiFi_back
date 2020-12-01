@@ -13,6 +13,7 @@ type User struct {
 	MovementListData  []MovementListData
 	CheckMovement     CheckMovement
 	CheckHeadPortrait []CheckHeadPortrait
+	GoPyData          GoPyData
 }
 
 //用户基本信息
@@ -98,9 +99,20 @@ type RegisterData struct {
 	Registered bool `json:"registered"`
 }
 
+//接收用户调用python的参数
+type ReceiveGoPyData struct {
+	ID   string `json:"id"`
+	File string `json:"file"`
+}
+
 //手机验证码返回字段
 type SecureCodeData struct {
 	Sent bool `json:"sent"`
+}
+
+//调用Python返回字段
+type GoPyData struct {
+	Success bool `json:"success"`
 }
 
 //确认验证码返回字段

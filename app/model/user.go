@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -32,6 +31,7 @@ func NewUser() *User {
 		MovementListData:  []MovementListData{},
 		CheckMovement:     CheckMovement{},
 		CheckHeadPortrait: []CheckHeadPortrait{},
+		GoPyData:          GoPyData{},
 	}
 
 	return temp
@@ -429,8 +429,8 @@ func (u *User) movementList(cont string) (err error) {
 		return
 	}
 
-	rows, err := db.Table(table[tempType - 1]).Where("uid = ?", user.UserID).
-		Order("time").Limit(user.PageNum*user.PageSize).Offset((user.PageNum-1)*user.PageSize).Select("id, time").Rows()
+	rows, err := db.Table(table[tempType-1]).Where("uid = ?", user.UserID).
+		Order("time").Limit(user.PageNum * user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, time").Rows()
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
 			"err:", err,
@@ -496,7 +496,6 @@ func (u *User) headPortraitList() (err error) {
 		*data = append(*data, *temp)
 	}
 
-
 	config.GetLogger().Info("获取头像信息结束")
 
 	return
@@ -505,16 +504,25 @@ func (u *User) headPortraitList() (err error) {
 /**
  * go调用python
  */
-func goAmp(filePath string) (err error) {
-	args := []string{"read_bfee_file.py", filePath}
-	out, err := exec.Command("python", args...).Output()
+func (u *User) goPy(cont string) (err error) {
+	config.GetLogger().Info("开始解析注册数据")
+	user := new(ReceiveGoPyData)
+	err = json.Unmarshal([]byte(cont), &user)
 	if err != nil {
-		return
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error,
+		)
+		return err
 	}
-	result := string(out)
-	if strings.Index(result, "success") != 0 {
-		err = errors.New(fmt.Sprintf("read_bfee_file.py error：%s", result))
+	config.GetLogger().Info("解析注册数据结束")
+
+	//args := []string{"read_bfee_file.py", user.File}
+	cmd := exec.Command("python", "read_bfee_file.py")
+	err = cmd.Run()
+	if err != nil {
+		return err
 	}
+
 	return
 }
 
@@ -771,3 +779,16 @@ func (u *User) GetHeadPortraitData() (err error, data []CheckHeadPortrait) {
 
 	return
 }
+
+func (u *User) GetGoPyData(cont string) (err error, data GoPyData) {
+	config.GetLogger().Info("开始查询头像列表")
+
+	err = u.goPy(cont)
+
+	data = u.GoPyData
+
+	config.GetLogger().Info("查询头像列表结束")
+
+	return
+}
+
