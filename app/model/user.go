@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
+	"github.com/gin-gonic/gin"
+	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -32,7 +35,8 @@ func NewUser() *User {
 		CheckMovement:     CheckMovement{},
 		CheckHeadPortrait: []CheckHeadPortrait{},
 		GoPyData:          GoPyData{},
-		StatisticsData:    StatisticsData{},
+		StatisticsData:    []StatisticsData{},
+		UploadData:        UploadData{},
 	}
 
 	return temp
@@ -652,61 +656,80 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 /**
  * 上传文件
  */
-//func (u *User) upload (c *gin.Context) (err error) {
-//	config.GetLogger().Info("开始获取文件")
-//	file, header, err := c.Request.FormFile("file")
-//
-//	if err != nil {
-//		config.GetLogger().Warnw("文件读取失败",
-//			"err", err,
-//		)
-//		return
-//	}
-//	config.GetLogger().Info("获取文件结束")
-//
-//	return
-//}
+func (u *User) upload(c *gin.Context) (err error) {
+	data := &u.UploadData
+
+	config.GetLogger().Info("开始获取文件")
+	file, header, err := c.Request.FormFile("file")
+
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("文件读取失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("获取文件结束")
+
+	filename := header.Filename
+	out, err := os.Create("uploadFile\\" + filename)
+
+	defer out.Close()
+	_, err = io.Copy(out, file)
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("文件上传失败",
+			"err", err,
+		)
+		return
+	}
+
+	data.Uploaded = true
+
+	return
+}
 
 /**
  * 统计信息
  */
 func (u *User) statistics() (err error) {
 	data := &u.StatisticsData
-	countR := 0
-	countW := 0
-	countS := 0
 
 	config.GetLogger().Info("开始获取跑步数据条数")
-	err = db.Table("dealt_run").Count(&countR).Error
+	i := new(StatisticsData)
+	err = db.Table("dealt_run").Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
 		)
 		return
 	}
-	data.RunSum = countR
+	i.Name = "Run"
+	*data = append(*data, *i)
 	config.GetLogger().Info("获取跑步数据条数结束")
 
 	config.GetLogger().Info("开始获取行走数据条数")
-	err = db.Table("dealt_walk").Count(&countW).Error
+	err = db.Table("dealt_walk").Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
 		)
 		return
 	}
-	data.WalkSum = countW
+	i.Name = "Walk"
+	*data = append(*data, *i)
 	config.GetLogger().Info("获取行走数据条数结束")
 
 	config.GetLogger().Info("开始获取摇手数据条数")
-	err = db.Table("dealt_shakehand").Count(&countS).Error
+	err = db.Table("dealt_shakehand").Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
 		)
 		return
 	}
-	data.ShakeHandSum = countS
+	i.Name = "ShakeHands"
+	*data = append(*data, *i)
 	config.GetLogger().Info("获取摇手数据条数结束")
 
 	return
@@ -857,7 +880,7 @@ func (u *User) GetGoPyData(cont string) (err error, data GoPyData) {
 	return
 }
 
-func (u *User) GetStatisticsData() (err error, data StatisticsData) {
+func (u *User) GetStatisticsData() (err error, data []StatisticsData) {
 	config.GetLogger().Info("开始获取统计数据")
 
 	err = u.statistics()
@@ -865,6 +888,18 @@ func (u *User) GetStatisticsData() (err error, data StatisticsData) {
 	data = u.StatisticsData
 
 	config.GetLogger().Info("获取统计数据结束")
+
+	return
+}
+
+func (u *User) GetUploadData(c *gin.Context) (err error, data UploadData) {
+	config.GetLogger().Info("开始上传文件")
+
+	err = u.upload(c)
+
+	data = u.UploadData
+
+	config.GetLogger().Info("上传文件结束")
 
 	return
 }

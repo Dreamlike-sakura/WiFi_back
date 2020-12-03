@@ -179,7 +179,7 @@ func (s *User) ChangePwdHandler(c *gin.Context) {
 
 	err, data := user.GetChangePwdData(string(cont))
 	if err != nil {
-		config.GetLogger().Warnw("更新用户基本信息失败",
+		config.GetLogger().Warnw("修改密码失败",
 			"err", err.Error(),
 		)
 		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
@@ -204,7 +204,7 @@ func (s *User) ChangePwdHandler2(c *gin.Context) {
 
 	err, data := user.GetChangePwdData2(string(cont))
 	if err != nil {
-		config.GetLogger().Warnw("更新用户基本信息失败",
+		config.GetLogger().Warnw("修改密码失败",
 			"err", err.Error(),
 		)
 		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
@@ -311,7 +311,23 @@ func (s *User) StatisticsHandler(c *gin.Context) {
 
 	err, data := user.GetStatisticsData()
 	if err != nil {
-		config.GetLogger().Warnw("查询头像列表失败",
+		config.GetLogger().Warnw("查询统计数据失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
+func (s *User) UploadHandler(c *gin.Context) {
+
+	user := model.NewUser()
+
+	err, data := user.GetUploadData(c)
+	if err != nil {
+		config.GetLogger().Warnw("上传文件失败",
 			"err", err.Error(),
 		)
 		c.JSON(http.StatusOK, s.FailWarp(err.Error()))

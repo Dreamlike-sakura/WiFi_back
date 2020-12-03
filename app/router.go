@@ -18,6 +18,7 @@ func RegisterRouters(app *gin.Engine) {
 	app.POST("/check_user_movementlist", user.MovementListHandler)
 	app.POST("/check_user_movement", user.MovementAmpPhaseHandler)
 	app.POST("/go_py", user.GoPyHandler)
+	app.POST("/upload", user.UploadHandler)
 	app.GET("/check_headportrait", user.HeadPortraitListHandler)
 	app.GET("/statistics", user.StatisticsHandler)
 }

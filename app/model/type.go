@@ -14,7 +14,8 @@ type User struct {
 	CheckMovement     CheckMovement
 	CheckHeadPortrait []CheckHeadPortrait
 	GoPyData          GoPyData
-	StatisticsData    StatisticsData
+	StatisticsData    []StatisticsData
+	UploadData        UploadData
 }
 
 //用户基本信息
@@ -107,6 +108,11 @@ type RegisterData struct {
 	Registered bool `json:"registered"`
 }
 
+//用户上传文件返回字段
+type UploadData struct {
+	Uploaded bool `json:"uploaded"`
+}
+
 //接收用户调用python的参数
 type ReceiveGoPyData struct {
 	ID   string `json:"id"`
@@ -151,9 +157,8 @@ type CheckHeadPortrait struct {
 }
 
 type StatisticsData struct {
-	RunSum       int `json:"run_sum"`
-	WalkSum      int `json:"walk_sum"`
-	ShakeHandSum int `json:"shake_hand_sum"`
+	Value int    `json:"value"`
+	Name  string `json:"name"`
 }
 
 //动作信息返回字段
