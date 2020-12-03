@@ -527,7 +527,7 @@ func (u *User) movementList(cont string) (err error) {
 		return err
 	}
 
-	err = db.Table(table[tempType - 1]).Count(&data.Sum).Error
+	err = db.Table(table[tempType - 1]).Where("uid = ?", user.UserID).Count(&data.Sum).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
 			"err:", err,
