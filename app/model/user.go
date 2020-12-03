@@ -414,7 +414,9 @@ func (u *User) changePwd2(cont string) (err error) {
 	config.GetLogger().Info("完成解析数据")
 
 	config.GetLogger().Info("开始获取个人信息")
-	err = db.Table("user_info").Where("id = ? AND password = ?", user.ID, user.OldPassword).Count(&count).Error
+	tempOldPwd := md5.Sum([]byte(user.OldPassword))
+	md5str := fmt.Sprintf("%x", tempOldPwd)
+	err = db.Table("user_info").Where("id = ? AND password = ?", user.ID, md5str).Count(&count).Error
 	if err != nil || count == 0 {
 		data.Changed = false
 		config.GetLogger().Warnw("获取个人信息失败",
@@ -426,7 +428,7 @@ func (u *User) changePwd2(cont string) (err error) {
 
 	config.GetLogger().Info("开始检验密码是否重复")
 	tempNewPwd := md5.Sum([]byte(user.NewPassword))
-	md5str := fmt.Sprintf("%x", tempNewPwd)
+	md5str = fmt.Sprintf("%x", tempNewPwd)
 
 	row := db.Table("user_info").Where("id = ?", user.ID).Select("password").Row()
 	err = row.Scan(&temp)
