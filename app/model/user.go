@@ -506,7 +506,7 @@ func (u *User) movementList(cont string) (err error) {
 	}
 
 	rows, err := db.Table(table[tempType-1]).Where("uid = ?", user.UserID).
-		Order("time").Limit(user.PageNum * user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, time").Rows()
+		Order("time").Limit(user.PageNum * user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, filename, time").Rows()
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
 			"err:", err,
@@ -530,15 +530,13 @@ func (u *User) movementList(cont string) (err error) {
 		tempData.FileName = ""
 		tempData.Time = ""
 
-		err = rows.Scan(&tempData.ID, &tempData.Time)
+		err = rows.Scan(&tempData.ID, &tempData.FileName, &tempData.Time)
 		if err != nil {
 			config.GetLogger().Warnw("赋值错误",
 				"err:", err,
 			)
 			return err
 		}
-
-		tempData.FileName = tempData.Time
 
 		data.List = append(data.List, *tempData)
 	}
