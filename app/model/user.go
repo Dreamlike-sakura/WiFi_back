@@ -422,7 +422,7 @@ func (u *User) changePwd2(cont string) (err error) {
 		config.GetLogger().Warnw("获取个人信息失败",
 			"err", err,
 		)
-		return
+		return err
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
