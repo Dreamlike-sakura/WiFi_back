@@ -117,6 +117,19 @@ func (u *User) register(cont string) (err error) {
 		return errors.New("用户名已存在")
 	}
 
+	//控制电话号码不能重复
+	count = 0
+	db.Table("user_info").Where("tel = ?", user.Tel).Count(&count)
+
+	//号码存在时，
+	if count != 0 {
+		data.Registered = false
+		config.GetLogger().Warnw("注册失败",
+			"err", errors.New("号码已存在"),
+		)
+		return errors.New("号码已存在")
+	}
+
 	//密码进行MD5加密
 	tempPwd := md5.Sum([]byte(user.Password))
 	md5str := fmt.Sprintf("%x", tempPwd)
