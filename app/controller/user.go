@@ -305,6 +305,22 @@ func (s *User) GoPyHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, s.SuccessWarp(data))
 }
 
+func (s *User) StatisticsHandler(c *gin.Context) {
+
+	user := model.NewUser()
+
+	err, data := user.GetStatisticsData()
+	if err != nil {
+		config.GetLogger().Warnw("查询头像列表失败",
+			"err", err.Error(),
+		)
+		c.JSON(http.StatusOK, s.FailWarp(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, s.SuccessWarp(data))
+}
+
 //func (s *User) UploadHandler(c *gin.Context) {
 //
 //	user := model.NewUser()

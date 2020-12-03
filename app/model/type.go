@@ -14,6 +14,7 @@ type User struct {
 	CheckMovement     CheckMovement
 	CheckHeadPortrait []CheckHeadPortrait
 	GoPyData          GoPyData
+	StatisticsData    StatisticsData
 }
 
 //用户基本信息
@@ -147,6 +148,12 @@ type CheckMovement struct {
 type CheckHeadPortrait struct {
 	ID  string `json:"id"`
 	Url string `json:"url"`
+}
+
+type StatisticsData struct {
+	RunSum       int `json:"run_sum"`
+	WalkSum      int `json:"walk_sum"`
+	ShakeHandSum int `json:"shake_hand_sum"`
 }
 
 //动作信息返回字段

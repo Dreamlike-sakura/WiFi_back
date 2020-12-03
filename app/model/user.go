@@ -32,6 +32,7 @@ func NewUser() *User {
 		CheckMovement:     CheckMovement{},
 		CheckHeadPortrait: []CheckHeadPortrait{},
 		GoPyData:          GoPyData{},
+		StatisticsData:    StatisticsData{},
 	}
 
 	return temp
@@ -657,14 +658,59 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 //
 //	if err != nil {
 //		config.GetLogger().Warnw("文件读取失败",
-//			"err", err.Error,
+//			"err", err,
 //		)
-//		return err
+//		return
 //	}
 //	config.GetLogger().Info("获取文件结束")
 //
 //	return
 //}
+
+/**
+ * 统计信息
+ */
+func (u *User) statistics() (err error) {
+	data := &u.StatisticsData
+	countR := 0
+	countW := 0
+	countS := 0
+
+	config.GetLogger().Info("开始获取跑步数据条数")
+	err = db.Table("dealt_run").Count(&countR).Error
+	if err != nil {
+		config.GetLogger().Warnw("数据库错误",
+			"err:", err,
+		)
+		return
+	}
+	data.RunSum = countR
+	config.GetLogger().Info("获取跑步数据条数结束")
+
+	config.GetLogger().Info("开始获取行走数据条数")
+	err = db.Table("dealt_walk").Count(&countW).Error
+	if err != nil {
+		config.GetLogger().Warnw("数据库错误",
+			"err:", err,
+		)
+		return
+	}
+	data.WalkSum = countW
+	config.GetLogger().Info("获取行走数据条数结束")
+
+	config.GetLogger().Info("开始获取摇手数据条数")
+	err = db.Table("dealt_shakehand").Count(&countS).Error
+	if err != nil {
+		config.GetLogger().Warnw("数据库错误",
+			"err:", err,
+		)
+		return
+	}
+	data.ShakeHandSum = countS
+	config.GetLogger().Info("获取摇手数据条数结束")
+
+	return
+}
 
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(cont string) (err error, data LoginData) {
@@ -811,3 +857,14 @@ func (u *User) GetGoPyData(cont string) (err error, data GoPyData) {
 	return
 }
 
+func (u *User) GetStatisticsData() (err error, data StatisticsData) {
+	config.GetLogger().Info("开始获取统计数据")
+
+	err = u.statistics()
+
+	data = u.StatisticsData
+
+	config.GetLogger().Info("获取统计数据结束")
+
+	return
+}
