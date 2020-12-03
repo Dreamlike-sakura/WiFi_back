@@ -121,7 +121,7 @@ func (u *User) register(cont string) (err error) {
 	count = 0
 	db.Table("user_info").Where("tel = ?", user.Tel).Count(&count)
 
-	//号码存在时，
+	//号码存在时
 	if count != 0 {
 		data.Registered = false
 		config.GetLogger().Warnw("注册失败",

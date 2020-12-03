@@ -156,6 +156,7 @@ type CheckHeadPortrait struct {
 	Url string `json:"url"`
 }
 
+//统计数据
 type StatisticsData struct {
 	Value int    `json:"value"`
 	Name  string `json:"name"`
