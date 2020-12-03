@@ -31,7 +31,7 @@ func NewUser() *User {
 		MovementData:      MovementData{},
 		ModifyData:        ModifyData{},
 		ChangePwdData:     ChangePwdData{},
-		MovementListData:  []MovementListData{},
+		MovementListData:  MovementListData{},
 		CheckMovement:     CheckMovement{},
 		CheckHeadPortrait: []CheckHeadPortrait{},
 		GoPyData:          GoPyData{},
@@ -58,6 +58,8 @@ func (u *User) login(cont string) (err error) {
 		)
 		return err
 	}
+
+
 
 	tempPwd := md5.Sum([]byte(user.UserPassword))
 	md5str := fmt.Sprintf("%x", tempPwd)
@@ -512,9 +514,17 @@ func (u *User) movementList(cont string) (err error) {
 		return err
 	}
 
+	err = db.Table(table[tempType - 1]).Count(&data.Sum).Error
+	if err != nil {
+		config.GetLogger().Warnw("数据库数据错误",
+			"err:", err,
+		)
+		return err
+	}
+
 	defer rows.Close()
 	for rows.Next() {
-		tempData := new(MovementListData)
+		tempData := new(MoveData)
 		tempData.ID = ""
 		tempData.Type = user.Type
 		tempData.FileName = ""
@@ -530,7 +540,7 @@ func (u *User) movementList(cont string) (err error) {
 
 		tempData.FileName = tempData.Time
 
-		*data = append(*data, *tempData)
+		data.List = append(data.List, *tempData)
 	}
 
 	config.GetLogger().Info("获取动作数据并分页结束")
@@ -832,7 +842,7 @@ func (u *User) GetChangePwdData2(cont string) (err error, data ChangePwdData) {
 	return
 }
 
-func (u *User) GetMovementListData(cont string) (err error, data []MovementListData) {
+func (u *User) GetMovementListData(cont string) (err error, data MovementListData) {
 	config.GetLogger().Info("开始查询用户动作列表")
 
 	err = u.movementList(cont)

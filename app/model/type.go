@@ -10,7 +10,7 @@ type User struct {
 	MovementData      MovementData
 	ModifyData        ModifyData
 	ChangePwdData     ChangePwdData
-	MovementListData  []MovementListData
+	MovementListData  MovementListData
 	CheckMovement     CheckMovement
 	CheckHeadPortrait []CheckHeadPortrait
 	GoPyData          GoPyData
@@ -172,9 +172,15 @@ type MovementData struct {
 }
 
 //用户动作信息返回列表
-type MovementListData struct {
+type MoveData struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`
 	FileName string `json:"file_name"`
 	Time     string `json:"time"`
+}
+
+//用户动作信息返回列表
+type MovementListData struct {
+	Sum  int        `json:"sum"`
+	List []MoveData `json:"list"`
 }
