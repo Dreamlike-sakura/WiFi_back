@@ -506,7 +506,7 @@ func (u *User) movementList(cont string) (err error) {
 	}
 
 	rows, err := db.Table(table[tempType-1]).Where("uid = ?", user.UserID).
-		Order("time").Limit(user.PageNum * user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, filename, time").Rows()
+		Order("time").Limit(user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, filename, time").Rows()
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
 			"err:", err,
