@@ -40,6 +40,13 @@ type ReceiveChangePwd struct {
 	UserPassword string `json:"user_pwd"`
 }
 
+//用于接受用户修改密码时的参数
+type ReceiveChangePwd2 struct {
+	ID          string `json:"id"`
+	OldPassword string `json:"old_pwd"`
+	NewPassword string `json:"new_pwd"`
+}
+
 //用于接受用户ID
 type ReceiveID struct {
 	UserID string `json:"user_id"`

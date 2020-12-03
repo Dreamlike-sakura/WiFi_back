@@ -395,6 +395,73 @@ func (u *User) changePwd(cont string) (err error) {
 	return
 }
 
+func (u *User) changePwd2(cont string) (err error) {
+	data := &u.ChangePwdData
+	i := new(Info)
+	count := 0
+	temp := ""
+
+	config.GetLogger().Info("开始解析数据")
+	user := new(ReceiveChangePwd2)
+	err = json.Unmarshal([]byte(cont), &user)
+	if err != nil {
+		data.Changed = false
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err.Error(),
+		)
+		return err
+	}
+	config.GetLogger().Info("完成解析数据")
+
+	config.GetLogger().Info("开始获取个人信息")
+	err = db.Table("user_info").Where("id = ? AND password = ?", user.ID, user.OldPassword).Count(&count).Error
+	if err != nil || count == 0 {
+		data.Changed = false
+		config.GetLogger().Warnw("获取个人信息失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("获取个人信息结束")
+
+	config.GetLogger().Info("开始检验密码是否重复")
+	tempNewPwd := md5.Sum([]byte(user.NewPassword))
+	md5str := fmt.Sprintf("%x", tempNewPwd)
+
+	row := db.Table("user_info").Where("id = ?", user.ID).Select("password").Row()
+	err = row.Scan(&temp)
+
+	if err != nil {
+		data.Changed = false
+		config.GetLogger().Warnw("检验密码是否重复失败",
+			"err", err,
+		)
+		return
+	}
+	if temp == md5str {
+		data.Changed = false
+		config.GetLogger().Warnw("新密码与原密码重复")
+		return errors.New("新密码与原密码重复")
+	}
+	config.GetLogger().Info("检验密码是否重复结束")
+
+	config.GetLogger().Info("开始更新个人密码")
+	i.Password = md5str
+
+	err = db.Table("user_info").Model(&i).Where("id = ?", user.ID).Updates(map[string]interface{}{"password": i.Password}).Error
+	if err != nil {
+		data.Changed = false
+		config.GetLogger().Warnw("更新个人密码失败",
+			"err", err,
+		)
+		return
+	}
+	data.Changed = true
+	config.GetLogger().Info("更新个人密码结束")
+
+	return
+}
+
 /**
  * 查看用户动作信息列表
  */
@@ -579,6 +646,24 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	return
 }
 
+/**
+ * 上传文件
+ */
+//func (u *User) upload (c *gin.Context) (err error) {
+//	config.GetLogger().Info("开始获取文件")
+//	file, header, err := c.Request.FormFile("file")
+//
+//	if err != nil {
+//		config.GetLogger().Warnw("文件读取失败",
+//			"err", err.Error,
+//		)
+//		return err
+//	}
+//	config.GetLogger().Info("获取文件结束")
+//
+//	return
+//}
+
 //----------------------------------分割线----------------------------------------
 func (u *User) GetLoginData(cont string) (err error, data LoginData) {
 	config.GetLogger().Info("开始获取登录数据")
@@ -656,6 +741,18 @@ func (u *User) GetChangePwdData(cont string) (err error, data ChangePwdData) {
 	config.GetLogger().Info("开始修改用户密码")
 
 	err = u.changePwd(cont)
+
+	data = u.ChangePwdData
+
+	config.GetLogger().Info("修改用户信息密码结束")
+
+	return
+}
+
+func (u *User) GetChangePwdData2(cont string) (err error, data ChangePwdData) {
+	config.GetLogger().Info("开始修改用户密码")
+
+	err = u.changePwd2(cont)
 
 	data = u.ChangePwdData
 

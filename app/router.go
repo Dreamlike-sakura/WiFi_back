@@ -13,6 +13,7 @@ func RegisterRouters(app *gin.Engine) {
 	app.POST("/verify", user.VerifyCodeHandler)
 	app.POST("/check_user_info", user.UserInfoHandler)
 	app.POST("/change_user_pwd", user.ChangePwdHandler)
+	app.POST("/change_user_pwd2", user.ChangePwdHandler2)
 	app.POST("/change_user_info", user.ChangeInfoHandler)
 	app.POST("/check_user_movementlist", user.MovementListHandler)
 	app.POST("/check_user_movement", user.MovementAmpPhaseHandler)
