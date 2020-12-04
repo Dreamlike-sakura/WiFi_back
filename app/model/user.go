@@ -59,8 +59,7 @@ func (u *User) login(cont string) (err error) {
 		return err
 	}
 
-
-
+	//密码加密后验证
 	tempPwd := md5.Sum([]byte(user.UserPassword))
 	md5str := fmt.Sprintf("%x", tempPwd)
 
@@ -117,7 +116,7 @@ func (u *User) register(cont string) (err error) {
 		return errors.New("用户名已存在")
 	}
 
-	//控制电话号码不能重复
+	//电话号码不能重复
 	count = 0
 	db.Table("user_info").Where("tel = ?", user.Tel).Count(&count)
 
@@ -168,6 +167,8 @@ func randCode() string {
 func (u *User) send(tel string) (err error) {
 	data := &u.SecureCodeData
 	user := new(ReceiveTel)
+
+	//数据解析
 	config.GetLogger().Info("开始解析数据")
 	err = json.Unmarshal([]byte(tel), &user)
 	if err != nil {
@@ -221,6 +222,7 @@ func (u *User) send(tel string) (err error) {
 func (u *User) verify(cont string) (err error) {
 	data := &u.VerifyCodeData
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析数据")
 	user := new(ReceiveTelAndCode)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -331,6 +333,34 @@ func (u *User) changeInfo(cont string) (err error) {
 		return
 	}
 	config.GetLogger().Info("获取个人信息结束")
+
+	config.GetLogger().Info("开始检验用户名是否重复")
+	count = 0
+	db.Table("user_info").Where("user = ?", user.UserName).Count(&count)
+
+	//用户名存在时，
+	if count != 0 {
+		data.Modified = false
+		config.GetLogger().Warnw("更改信息失败",
+			"err", errors.New("用户名已存在"),
+		)
+		return errors.New("用户名已存在")
+	}
+	config.GetLogger().Info("检验用户名是否重复结束")
+
+	config.GetLogger().Info("开始检验电话是否重复")
+	count = 0
+	db.Table("user_info").Where("tel = ?", user.UserTel).Count(&count)
+
+	//用户名存在时，
+	if count != 0 {
+		data.Modified = false
+		config.GetLogger().Warnw("更改信息失败",
+			"err", errors.New("电话号码已存在"),
+		)
+		return errors.New("电话号码已存在")
+	}
+	config.GetLogger().Info("检验号码是否重复结束")
 
 	i.User = user.UserName
 	i.Sex = user.UserSex
