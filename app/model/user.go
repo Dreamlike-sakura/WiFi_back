@@ -234,6 +234,7 @@ func (u *User) verify(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析数据结束")
 
+	//查询绑定的手机号
 	config.GetLogger().Info("开始查询与此手机号绑定的用户ID")
 	row := db.Table("user_info").Where("tel = ?", user.UserTel).Select("id").Row()
 	err = row.Scan(&data.UserID)
@@ -246,6 +247,7 @@ func (u *User) verify(cont string) (err error) {
 	}
 	config.GetLogger().Info("查询与此手机号绑定的用户ID结束")
 
+	//获取发送验证码时储存在redis中的验证码
 	config.GetLogger().Info("开始获取redis中的验证码")
 	tempCode, errs := config.GetRedis().Get(user.UserTel).Result()
 	if errs != nil {
@@ -257,6 +259,7 @@ func (u *User) verify(cont string) (err error) {
 	}
 	config.GetLogger().Info("获取redis中的验证码结束")
 
+	//校验验证码
 	config.GetLogger().Info("开始校验验证码")
 	if tempCode != user.UserSecureCode {
 		data.Verified = false
@@ -274,6 +277,7 @@ func (u *User) verify(cont string) (err error) {
 func (u *User) info(userID string) (err error) {
 	data := &u.Info
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析数据")
 	user := new(ReceiveID)
 	err = json.Unmarshal([]byte(userID), &user)
@@ -285,19 +289,18 @@ func (u *User) info(userID string) (err error) {
 	}
 	config.GetLogger().Info("完成解析数据")
 
+	//查询个人信息
 	config.GetLogger().Info("开始获取个人信息")
-
 	row := db.Table("user_info, head_portrait").Where("id = ? AND head_portrait = picture_id", user.UserID).
 		Select("id, user, password, tel, email, sex, type, url").Row()
 
 	err = row.Scan(&data.ID, &data.User, &data.Password, &data.Tel, &data.Email, &data.Sex, &data.Type, &data.Head_portrait)
 	if err != nil {
 		config.GetLogger().Warnw("获取个人信息失败",
-			"err", err.Error,
+			"err", err,
 		)
 		return
 	}
-
 	config.GetLogger().Info("获取个人信息结束")
 
 	return
@@ -311,6 +314,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	i := new(Info)
 	count := 0
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析数据")
 	user := new(ReceiveChange)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -323,6 +327,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	}
 	config.GetLogger().Info("完成解析数据")
 
+	//查询用户是否存在
 	config.GetLogger().Info("开始获取个人信息")
 	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error
 	if err != nil || count == 0 {
@@ -334,11 +339,12 @@ func (u *User) changeInfo(cont string) (err error) {
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
+	//用户名不可重复
 	config.GetLogger().Info("开始检验用户名是否重复")
 	count = 0
 	db.Table("user_info").Where("user = ?", user.UserName).Count(&count)
 
-	//用户名存在时，
+	//用户名存在时
 	if count != 0 {
 		data.Modified = false
 		config.GetLogger().Warnw("更改信息失败",
@@ -348,6 +354,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	}
 	config.GetLogger().Info("检验用户名是否重复结束")
 
+	//电话号码不可重复
 	config.GetLogger().Info("开始检验电话是否重复")
 	count = 0
 	db.Table("user_info").Where("tel = ?", user.UserTel).Count(&count)
@@ -367,6 +374,8 @@ func (u *User) changeInfo(cont string) (err error) {
 	i.Tel = user.UserTel
 	i.Email = user.UserEmail
 
+	config.GetLogger().Info("开始查询头像id")
+	//根据前端发送的url找到对应的头像id，准备插入
 	row := db.Raw(`SELECT picture_id FROM head_portrait WHERE url = ?`, user.HeadPortrait).Row()
 	err = row.Scan(&i.Head_portrait)
 	if err != nil {
@@ -376,7 +385,10 @@ func (u *User) changeInfo(cont string) (err error) {
 		)
 		return
 	}
+	config.GetLogger().Info("查询头像id结束")
 
+	config.GetLogger().Info("开始更新数据库数据")
+	//开始更新
 	err = db.Table("user_info").Model(&i).Where("id = ?", user.UserID).Updates(map[string]interface{}{"user": i.User, "sex": i.Sex, "tel": i.Tel, "email": i.Email, "head_portrait": i.Head_portrait}).Error
 	if err != nil {
 		data.Modified = false
@@ -386,6 +398,7 @@ func (u *User) changeInfo(cont string) (err error) {
 		return
 	}
 	data.Modified = true
+	config.GetLogger().Info("更新数据库数据结束")
 
 	config.GetLogger().Info("更新个人信息结束")
 
@@ -393,13 +406,14 @@ func (u *User) changeInfo(cont string) (err error) {
 }
 
 /**
- * 修改个人密码
+ * 修改个人密码（忘记密码）
  */
 func (u *User) changePwd(cont string) (err error) {
 	data := &u.ChangePwdData
 	i := new(Info)
 	count := 0
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析数据")
 	user := new(ReceiveChangePwd)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -412,6 +426,7 @@ func (u *User) changePwd(cont string) (err error) {
 	}
 	config.GetLogger().Info("完成解析数据")
 
+	//检测用户是否存在
 	config.GetLogger().Info("开始获取个人信息")
 	err = db.Table("user_info").Where("id = ?", user.UserID).Count(&count).Error
 	if err != nil || count == 0 {
@@ -423,8 +438,8 @@ func (u *User) changePwd(cont string) (err error) {
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
+	//更新密码
 	config.GetLogger().Info("开始更新个人密码")
-
 	tempPwd := md5.Sum([]byte(user.UserPassword))
 	md5str := fmt.Sprintf("%x", tempPwd)
 
@@ -445,12 +460,16 @@ func (u *User) changePwd(cont string) (err error) {
 	return
 }
 
+/**
+ * 修改个人密码（正常修改密码）
+ */
 func (u *User) changePwd2(cont string) (err error) {
 	data := &u.ChangePwdData
 	i := new(Info)
 	count := 0
 	temp := ""
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析数据")
 	user := new(ReceiveChangePwd2)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -463,9 +482,11 @@ func (u *User) changePwd2(cont string) (err error) {
 	}
 	config.GetLogger().Info("完成解析数据")
 
+	//获取用户信息
 	config.GetLogger().Info("开始获取个人信息")
 	tempOldPwd := md5.Sum([]byte(user.OldPassword))
 	md5str := fmt.Sprintf("%x", tempOldPwd)
+
 	err = db.Table("user_info").Where("id = ? AND password = ?", user.ID, md5str).Count(&count).Error
 	if err != nil || count == 0 {
 		data.Changed = false
@@ -476,6 +497,7 @@ func (u *User) changePwd2(cont string) (err error) {
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
+	//新密码不可与原密码重复
 	config.GetLogger().Info("开始检验密码是否重复")
 	tempNewPwd := md5.Sum([]byte(user.NewPassword))
 	md5str = fmt.Sprintf("%x", tempNewPwd)
@@ -497,6 +519,7 @@ func (u *User) changePwd2(cont string) (err error) {
 	}
 	config.GetLogger().Info("检验密码是否重复结束")
 
+	//更新密码
 	config.GetLogger().Info("开始更新个人密码")
 	i.Password = md5str
 
@@ -520,6 +543,7 @@ func (u *User) changePwd2(cont string) (err error) {
 func (u *User) movementList(cont string) (err error) {
 	data := &u.MovementListData
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析注册数据")
 	user := new(ReceiveMovementList)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -532,7 +556,6 @@ func (u *User) movementList(cont string) (err error) {
 	config.GetLogger().Info("解析注册数据结束")
 
 	config.GetLogger().Info("开始获取动作数据并分页")
-
 	table := [3]string{"dealt_run", "dealt_walk", "dealt_shakehand"}
 	tempType, err := strconv.Atoi(user.Type)
 	if err != nil {
@@ -541,6 +564,8 @@ func (u *User) movementList(cont string) (err error) {
 		)
 		return
 	}
+
+	//1--3分别表示跑步、行走、摇手
 	if tempType < 1 || tempType > 3 {
 		config.GetLogger().Warnw("类型错误",
 			"err:", errors.New("类型范围错误"),
@@ -548,6 +573,7 @@ func (u *User) movementList(cont string) (err error) {
 		return
 	}
 
+	//获取动作数据，并根据页大小和页码进行分页
 	rows, err := db.Table(table[tempType-1]).Where("uid = ?", user.UserID).
 		Order("time").Limit(user.PageSize).Offset((user.PageNum - 1) * user.PageSize).Select("id, filename, time").Rows()
 	if err != nil {
@@ -557,6 +583,7 @@ func (u *User) movementList(cont string) (err error) {
 		return err
 	}
 
+	//查询数据总条数
 	err = db.Table(table[tempType - 1]).Where("uid = ?", user.UserID).Count(&data.Sum).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
@@ -595,8 +622,8 @@ func (u *User) movementList(cont string) (err error) {
 func (u *User) headPortraitList() (err error) {
 	data := &u.CheckHeadPortrait
 
+	//查询头像列表
 	config.GetLogger().Info("开始获取头像信息")
-
 	rows, errs := db.Table("head_portrait").Select("picture_id, url").Rows()
 	if errs != nil {
 		config.GetLogger().Warnw("获取头像信息失败",
@@ -631,6 +658,8 @@ func (u *User) headPortraitList() (err error) {
  */
 func (u *User) goPy(cont string) (err error) {
 	data := &u.GoPyData
+
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析原始数据")
 	user := new(ReceiveGoPyData)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -646,9 +675,11 @@ func (u *User) goPy(cont string) (err error) {
 
 	fmt.Println(args)
 
+	//使用命令行的方式运行python文件
 	cmd := exec.Command("python", args...)
+	//设置执行文件的文件路径
 	cmd.Dir = ".\\py\\"
-
+	//开始执行
 	err = cmd.Run()
 	if err != nil {
 		data.Success = false
@@ -658,6 +689,7 @@ func (u *User) goPy(cont string) (err error) {
 		return
 	}
 	data.Success = true
+	//脚本执行结束后会生成2个json文件
 
 	return
 }
@@ -668,6 +700,7 @@ func (u *User) goPy(cont string) (err error) {
 func (u *User) getAmpOrPhase(cont string) (err error) {
 	data := &u.CheckMovement
 
+	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析文件名")
 	user := new(ReceiveCheckMovement)
 	err = json.Unmarshal([]byte(cont), &user)
@@ -679,6 +712,7 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析文件名结束")
 
+	//设置路径（绝对、相对）
 	//dir := "D:\20study\2020project\back\"
 	dir := ".\\data\\wifi\\"
 	fileStr := path.Join(dir, user.FileName)
@@ -686,11 +720,22 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 
 	fmt.Println(fileStr)
 
+	//验证文件是否为json文件
+	ext := path.Ext(fileStr)
+	if ext != ".json" {
+		config.GetLogger().Warnw("文件错误",
+			"err", errors.New("文件扩展名不为.json"),
+		)
+		return errors.New("文件扩展名不为.json")
+	}
+
+	//读取文件
 	f, errs := ioutil.ReadFile(fileStr)
 	if errs != nil {
 		fmt.Println("read fail", errs)
 	}
 
+	//读取json文件并传给前端
 	config.GetLogger().Info("开始解析矩阵数据")
 	err = json.Unmarshal([]byte(f), &data.Content)
 	if err != nil {
