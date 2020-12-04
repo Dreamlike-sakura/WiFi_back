@@ -335,7 +335,7 @@ func (u *User) changeInfo(cont string) (err error) {
 		config.GetLogger().Warnw("获取个人信息失败",
 			"err", err,
 		)
-		return
+		return errors.New("获取个人信息失败")
 	}
 	config.GetLogger().Info("获取个人信息结束")
 
