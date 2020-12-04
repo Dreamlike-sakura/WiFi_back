@@ -342,7 +342,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	//用户名不可重复
 	config.GetLogger().Info("开始检验用户名是否重复")
 	count = 0
-	db.Table("user_info").Where("user = ?", user.UserName).Count(&count)
+	db.Table("user_info").Where("user = ? AND id <> ?", user.UserName, user.UserID).Count(&count)
 
 	//用户名存在时
 	if count != 0 {
@@ -357,7 +357,7 @@ func (u *User) changeInfo(cont string) (err error) {
 	//电话号码不可重复
 	config.GetLogger().Info("开始检验电话是否重复")
 	count = 0
-	db.Table("user_info").Where("tel = ?", user.UserTel).Count(&count)
+	db.Table("user_info").Where("tel = ? AND id <> ?", user.UserTel, user.UserID).Count(&count)
 
 	//用户名存在时，
 	if count != 0 {
