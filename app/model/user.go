@@ -194,9 +194,31 @@ func (u *User) send(tel string) (err error) {
 	code := randCode()
 	config.GetLogger().Info("生成6位随机验证码结束")
 
+	config.GetLogger().Info("开始读取ak")
+	fileStr := ".\\ak\\ak.json"
+
+	f, err := ioutil.ReadFile(fileStr)
+	if err != nil {
+		fmt.Println("read fail", err)
+		config.GetLogger().Warnw("文件读取失败",
+			"err", err,
+		)
+		return
+	}
+
+	i := new(ReceiveAK)
+	err = json.Unmarshal([]byte(f), &i)
+	if err != nil {
+		config.GetLogger().Warnw("矩阵数据解析失败",
+			"err", err,
+		)
+		return err
+	}
+	config.GetLogger().Info("读取ak结束")
+
 	config.GetLogger().Info("开始发送验证码")
 	//检查用于发送验证码的手机号是否已经被注册
-	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", "", "")
+	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", i.AK, i.AKS)
 	if err != nil {
 		data.Sent = false
 		config.GetLogger().Warnw("获取手机验证码失败",
@@ -817,6 +839,10 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	f, errs := ioutil.ReadFile(fileStr)
 	if errs != nil {
 		fmt.Println("read fail", errs)
+		config.GetLogger().Warnw("文件读取失败",
+			"err", err,
+		)
+		return err
 	}
 
 	//读取json文件并传给前端

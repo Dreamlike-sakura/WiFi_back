@@ -54,6 +54,12 @@ type ReceiveID struct {
 	UserID string `json:"user_id"`
 }
 
+//用于读取ak
+type ReceiveAK struct {
+	AK  string `json:"ak"`
+	AKS string `json:"aks"`
+}
+
 //用于接受用户电话
 type ReceiveTel struct {
 	UserTel string `json:"tel"`
