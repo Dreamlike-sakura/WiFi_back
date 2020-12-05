@@ -1043,12 +1043,24 @@ func (u *User) upload(c *gin.Context) (err error) {
 /**
  * 统计信息
  */
-func (u *User) statistics() (err error) {
+func (u *User) statistics(cont string) (err error) {
 	data := &u.StatisticsData
+
+	//接收前端所传数据并解析
+	config.GetLogger().Info("开始解析数据")
+	id := new(ReceiveID)
+	err = json.Unmarshal([]byte(cont), &id)
+	if err != nil {
+		config.GetLogger().Warnw("数据解析失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("解析数据结束")
 
 	config.GetLogger().Info("开始获取跑步数据条数")
 	i := new(StatisticsData)
-	err = db.Table("dealt_run").Count(&i.Value).Error
+	err = db.Table("dealt_run").Where("id = ?", id).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
@@ -1060,7 +1072,7 @@ func (u *User) statistics() (err error) {
 	config.GetLogger().Info("获取跑步数据条数结束")
 
 	config.GetLogger().Info("开始获取行走数据条数")
-	err = db.Table("dealt_walk").Count(&i.Value).Error
+	err = db.Table("dealt_walk").Where("id = ?", id).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
@@ -1072,7 +1084,7 @@ func (u *User) statistics() (err error) {
 	config.GetLogger().Info("获取行走数据条数结束")
 
 	config.GetLogger().Info("开始获取摇手数据条数")
-	err = db.Table("dealt_shakehand").Count(&i.Value).Error
+	err = db.Table("dealt_shakehand").Where("id = ?", id).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
@@ -1231,10 +1243,10 @@ func (u *User) GetGoPyData(cont string) (err error, data GoPyData) {
 	return
 }
 
-func (u *User) GetStatisticsData() (err error, data []StatisticsData) {
+func (u *User) GetStatisticsData(cont string) (err error, data []StatisticsData) {
 	config.GetLogger().Info("开始获取统计数据")
 
-	err = u.statistics()
+	err = u.statistics(cont)
 
 	data = u.StatisticsData
 

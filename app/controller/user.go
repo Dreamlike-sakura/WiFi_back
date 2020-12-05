@@ -306,10 +306,11 @@ func (s *User) GoPyHandler(c *gin.Context) {
 }
 
 func (s *User) StatisticsHandler(c *gin.Context) {
+	cont, _ := ioutil.ReadAll(c.Request.Body)
 
 	user := model.NewUser()
 
-	err, data := user.GetStatisticsData()
+	err, data := user.GetStatisticsData(string(cont))
 	if err != nil {
 		config.GetLogger().Warnw("查询统计数据失败",
 			"err", err.Error(),
