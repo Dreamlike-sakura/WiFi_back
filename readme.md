@@ -23,7 +23,16 @@
 ├── go.mod # go.mod文件
 ├── go.sum
 ├── main.go # 应用程序入口
+├── py # 算法实现
+│   ├── Bfee.py
+│   ├── __pycache__
+│   │   ├── Bfee.cpython-38.pyc
+│   │   └── get_scale_csi.cpython-38.pyc
+│   ├── get_scale_csi.py
+│   ├── go_build_back.exe # 可执行文件
+│   └── read_bfee_file.py
 └── readme.md
+
 ``` 
 ## 运行方法 配置文件配置项说明 🔧
 运行时需要加入命令行参数，读取配置文件相关命令如下：
@@ -58,7 +67,7 @@ database:
     message: string
     data: {
         is_login: boolean //true表示登录成功
-        type：    int//权限0是普通用户，1是管理员，2是超级管理员。
+        type：    int //权限0是普通用户，1是管理员，2是超级管理员。
     }
 }
 ``` 
@@ -123,6 +132,49 @@ head_portrait = "1"
     status: "success" || "error"
     message: string
     data: nil
+}
+``` 
+### 查看用户信息
+* URL: /check_user_info
+* Method: POST
+#### 前端发送
+```
+{
+    user_id: string
+}
+
+``` 
+#### 返回数据
+```
+{
+    "data": {
+        "user_id": string
+        "user_name": string
+        "user_pwd": string
+        "user_sex": string
+        "user_tel": string
+        "user_email": string
+        "user_type": string
+        "head_portrait": string
+    },
+    "message": null,
+    "status": "success"
+}
+``` 
+### 修改密码之忘记密码
+* URL: /change_user_pwd
+* Method: POST
+#### 前端发送
+```
+{
+    "user_id": string
+    "user_pwd": string
+}
+``` 
+#### 返回数据
+```
+{
+    changed: bool
 }
 ``` 
 ## 可用图标收集
