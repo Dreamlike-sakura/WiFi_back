@@ -85,7 +85,7 @@ if __name__ == '__main__':
             phase_dealt[j][i] = temparray[j][i] - k * m[j] - sum[i] / 30
 
     data1 = np.array(data)
-    limit2=150
+    limit2=50
 
     mat = np.array(data1);
     amp = np.array(amp);
