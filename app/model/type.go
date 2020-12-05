@@ -189,3 +189,23 @@ type MovementListData struct {
 	Sum  int        `json:"sum"`
 	List []MoveData `json:"list"`
 }
+
+//往数据库里插入原始数据
+type OriginData struct {
+	UID      string `gorm:"Column:uid;Type:int;NOT NULL"`
+	FileName string `gorm:"Column:filename;Type:varchar(255);DEFAULT:NULL"`
+	DataUrl  string `gorm:"Column:data_url;Type:varchar(255);DEFAULT:NULL"`
+	Time     string `gorm:"Column:time;Type:datetime;NOT NULL"`
+}
+
+//往数据库里插入处理后数据
+type DealtData struct {
+	UID         string `gorm:"Column:uid;Type:int;NOT NULL"`
+	FileName    string `gorm:"Column:filename;Type:varchar(255);NOT NULL"`
+	Amp         string `gorm:"Column:amplitude;Type:text;DEFAULT:NULL"`
+	Phase       string `gorm:"Column:phase;Type:text;DEFAULT:NULL"`
+	OriginAmp   string `gorm:"Column:origin_amplitude;Type:text;DEFAULT:NULL"`
+	OriginPhase string `gorm:"Column:origin_phase;Type:text;DEFAULT:NULL"`
+	Abnormal    string `gorm:"Column:abnormal;Type:text;DEFAULT:NULL"`
+	Time        string `gorm:"Column:time;Type:datetime;NOT NULL"`
+}

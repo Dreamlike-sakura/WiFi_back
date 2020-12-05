@@ -749,12 +749,57 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	config.GetLogger().Info("解析文件名结束")
 
 	config.GetLogger().Info("开始进行数据有效性验证")
+	if user.MoveType != "amp" && user.MoveType != "phase" && user.MoveType != "abnormal" {
+		config.GetLogger().Warnw("MoveType错误",
+			"err", errors.New("MoveType错误"),
+		)
+		return errors.New("MoveType错误")
+	}
+
+	if user.FileType < 1 || user.FileType > 3 {
+		config.GetLogger().Warnw("FileType错误",
+			"err", errors.New("FileType错误"),
+		)
+		return errors.New("FileType错误")
+	}
+
+	if user.Type != 0 && user.Type != 1 {
+		config.GetLogger().Warnw("Type错误",
+			"err", errors.New("类型错误"),
+		)
+		return errors.New("类型错误")
+	}
+
+	if user.Type == 0 && user.MoveType == "abnormal" {
+		config.GetLogger().Warnw("Type错误",
+			"err", errors.New("类型错误"),
+		)
+		return errors.New("类型错误")
+	}
 	config.GetLogger().Info("进行数据有效性验证完成")
 
 	//设置路径（绝对、相对）
 	//dir := "D:\20study\2020project\back\"
-	dir := ".\\data\\" + user.UserName + "\\" + key2[user.Type] + "\\" + key1[user.FileType] + "\\" + user.MoveType + "\\"
-	fileStr := path.Join(dir, user.FileName)
+	//.\data\tsyhh\origin\run\amp
+	dir := ".\\data\\" + user.UserName + "\\" + key2[user.Type] + "\\" + key1[user.FileType-1] + "\\" + user.MoveType + "\\"
+	filename := ""
+	if user.Type == 0 {
+		if user.MoveType == "amp" {
+			filename = user.FileName + "_amp.json"
+		} else if user.MoveType == "phase" {
+			filename = user.FileName + "_phase.json"
+		}
+	} else if user.Type == 1 {
+		if user.MoveType == "amp" {
+			filename = "dealt_" + user.FileName + "_amp.json"
+		} else if user.MoveType == "phase" {
+			filename = "dealt_" + user.FileName + "_phase.json"
+		} else if user.MoveType == "abnormal" {
+			filename = "abnormal_" + user.FileName + ".json"
+		}
+	}
+
+	fileStr := path.Join(dir, filename)
 	//fileStr := dir + user.FileName
 
 	fmt.Println(fileStr)
@@ -835,6 +880,8 @@ func createDir(userName string) (err error) {
 func (u *User) upload(c *gin.Context) (err error) {
 	data := &u.UploadData
 	dataType := [3]string{"run", "walk", "shake"}
+	dbName := [6]string{"origin_run", "origin_walk", "origin_shakehand", "dealt_run", "dealt_walk", "dealt_shakehand"}
+	userID := ""
 
 	config.GetLogger().Info("开始获取文件")
 	//获取用户名
@@ -870,15 +917,15 @@ func (u *User) upload(c *gin.Context) (err error) {
 	}
 
 	file.Filename = dataType[filetype-1] + time.Now().Format("2006-01-02-15-04-05") + ext
+	filename := dataType[filetype-1] + time.Now().Format("2006-01-02-15-04-05")
 	fmt.Println(file.Filename)
 	config.GetLogger().Info("文件重命名结束")
 
 	config.GetLogger().Info("开始保存文件至服务器")
-
-	filepath := ".\\data\\" + name + "\\upload\\" + dataType[filetype-1]
+	filepath := ".\\data\\" + name + "\\upload\\" + dataType[filetype-1] + "\\"
 
 	//设置保存路径
-	dst := filepath + "\\" + file.Filename
+	dst := filepath + file.Filename
 
 	err = c.SaveUploadedFile(file, dst)
 	if err != nil {
@@ -893,9 +940,6 @@ func (u *User) upload(c *gin.Context) (err error) {
 	config.GetLogger().Info("开始解析并生成原始数据")
 	//设置运行时参数
 	args := []string{"read_bfee_file.py", dataType[filetype-1] + time.Now().Format("2006-01-02-15-04-05"), name}
-
-	fmt.Println(args)
-
 	//使用命令行的方式运行python文件
 	cmd := exec.Command("python", args...)
 	//设置执行文件的文件路径
@@ -910,6 +954,60 @@ func (u *User) upload(c *gin.Context) (err error) {
 		return
 	}
 	config.GetLogger().Info("解析并生成原始数据结束")
+
+	config.GetLogger().Info("开始更新数据库")
+	row := db.Table("user_info").Where("user = ?", name).Select("id").Row()
+	err = row.Scan(&userID)
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("查询用户ID失败",
+			"err", err,
+		)
+		return
+	}
+
+	tx := db.Begin()
+	od := new(OriginData)
+	od.UID = userID
+	od.FileName = file.Filename
+	od.DataUrl = dst
+	od.Time = time.Now().String()
+	fmt.Println(dst)
+	err = db.Table(dbName[filetype-1]).Create(&od).Error
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("更新数据库失败",
+			"err", err,
+		)
+		tx.Rollback()
+		return
+	}
+
+	dd := new(DealtData)
+	path1 := ".\\data\\" + name + "\\dealt\\" + dataType[filetype-1] + "\\amp\\" + "dealt_" + filename + "_amp.json"
+	path2 := ".\\data\\" + name + "\\dealt\\" + dataType[filetype-1] + "\\phase\\" + "dealt_" + filename + "_phase.json"
+	path3 := ".\\data\\" + name + "\\dealt\\" + dataType[filetype-1] + "\\abnormal\\" + "abnormal_" + filename + ".json"
+	path4 := ".\\data\\" + name + "\\origin\\" + dataType[filetype-1] + "\\amp\\" + filename + "_amp.json"
+	path5 := ".\\data\\" + name + "\\origin\\" + dataType[filetype-1] + "\\phase\\" + filename + "_phase.json"
+	dd.UID = userID
+	dd.FileName = filename
+	dd.Amp = path1
+	dd.Phase = path2
+	dd.Abnormal = path3
+	dd.OriginAmp = path4
+	dd.OriginPhase = path5
+	dd.Time = time.Now().String()
+	err = db.Table(dbName[filetype+2]).Create(&dd).Error
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("更新数据库失败",
+			"err", err,
+		)
+		tx.Rollback()
+		return
+	}
+	tx.Commit()
+	config.GetLogger().Info("更新数据库结束")
 
 	data.Uploaded = true
 
