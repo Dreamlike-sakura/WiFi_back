@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
 	"github.com/gin-gonic/gin"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -104,7 +104,7 @@ func (u *User) register(cont string) (err error) {
 	config.GetLogger().Info("解析注册数据结束")
 
 	config.GetLogger().Info("开始注册")
-	//查询用户名是否重复，重复返回错误，否则数据库里插入 一条数据
+	//查询用户名是否重复，重复返回错误，否则数据库里插入一条数据
 	db.Table("user_info").Where("user = ?", user.User).Count(&count)
 
 	//用户名存在时，
@@ -144,9 +144,20 @@ func (u *User) register(cont string) (err error) {
 		)
 		return
 	}
-	config.GetLogger().Info("注册结束")
+
+	config.GetLogger().Info("开始创建用户目录")
+	err = createDir(user.User)
+	if err != nil {
+		config.GetLogger().Warnw("文件夹创建失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("创建用户目录结束")
 
 	data.Registered = true
+
+	config.GetLogger().Info("注册结束")
 
 	return
 }
@@ -186,6 +197,13 @@ func (u *User) send(tel string) (err error) {
 	config.GetLogger().Info("开始发送验证码")
 	//检查用于发送验证码的手机号是否已经被注册
 	client, err := dysmsapi.NewClientWithAccessKey("cn-hangzhou", "", "")
+	if err != nil {
+		data.Sent = false
+		config.GetLogger().Warnw("获取手机验证码失败",
+			"err", err,
+		)
+		return
+	}
 
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
@@ -584,7 +602,7 @@ func (u *User) movementList(cont string) (err error) {
 	}
 
 	//查询数据总条数
-	err = db.Table(table[tempType - 1]).Where("uid = ?", user.UserID).Count(&data.Sum).Error
+	err = db.Table(table[tempType-1]).Where("uid = ?", user.UserID).Count(&data.Sum).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库数据错误",
 			"err:", err,
@@ -658,6 +676,7 @@ func (u *User) headPortraitList() (err error) {
  */
 func (u *User) goPy(cont string) (err error) {
 	data := &u.GoPyData
+	name := ""
 
 	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析原始数据")
@@ -671,7 +690,22 @@ func (u *User) goPy(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析原始数据结束")
 
-	args := []string{"read_bfee_file.py", user.File}
+	config.GetLogger().Info("开始查询用户名")
+	row := db.Table("user_info").Where("id = ?", user.ID).Select("user").Row()
+	err = row.Scan(&name)
+	if err != nil {
+		config.GetLogger().Warnw("用户名获取失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("查询用户名结束")
+
+	//去掉文件后缀名
+	fileSuffix := path.Ext(user.File)
+	user.File = strings.TrimSuffix(user.File, fileSuffix)
+
+	args := []string{"read_bfee_file.py", user.File, name}
 
 	fmt.Println(args)
 
@@ -699,6 +733,8 @@ func (u *User) goPy(cont string) (err error) {
  */
 func (u *User) getAmpOrPhase(cont string) (err error) {
 	data := &u.CheckMovement
+	key1 := [3]string{"run", "walk", "shake"}
+	key2 := [2]string{"origin", "dealt"}
 
 	//接收前端所传数据并解析
 	config.GetLogger().Info("开始解析文件名")
@@ -712,9 +748,12 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 	}
 	config.GetLogger().Info("解析文件名结束")
 
+	config.GetLogger().Info("开始进行数据有效性验证")
+	config.GetLogger().Info("进行数据有效性验证完成")
+
 	//设置路径（绝对、相对）
 	//dir := "D:\20study\2020project\back\"
-	dir := ".\\data\\wifi\\"
+	dir := ".\\data\\" + user.UserName + "\\" + key2[user.Type] + "\\" + key1[user.FileType] + "\\" + user.MoveType + "\\"
 	fileStr := path.Join(dir, user.FileName)
 	//fileStr := dir + user.FileName
 
@@ -750,14 +789,60 @@ func (u *User) getAmpOrPhase(cont string) (err error) {
 }
 
 /**
- * 上传文件
+ * 根据用户名创建目录结构
+ */
+func createDir(userName string) (err error) {
+	key1 := [3]string{"origin", "dealt", "upload"}
+	key2 := [3]string{"run", "walk", "shake"}
+	key3 := [3]string{"amp", "phase", "abnormal"}
+	filepath := ""
+
+	i := 0
+	j := 0
+	k := 0
+
+	for i = 0; i < 3; i++ {
+		for j = 0; j < 3; j++ {
+			for k = 0; k < 3; k++ {
+				if i == 0 {
+					if k == 2 {
+						continue
+					}
+					filepath = ".\\data\\" + userName + "\\" + key1[i] + "\\" + key2[j] + "\\" + key3[k]
+				} else if i == 1 {
+					filepath = ".\\data\\" + userName + "\\" + key1[i] + "\\" + key2[j] + "\\" + key3[k]
+				} else {
+					filepath = ".\\data\\" + userName + "\\" + key1[i] + "\\" + key2[j]
+				}
+
+				err = os.MkdirAll(filepath, os.ModePerm)
+				if err != nil {
+					config.GetLogger().Warnw("文件夹创建失败",
+						"err", err,
+					)
+					return
+				}
+			}
+		}
+	}
+
+	return
+}
+
+/**
+ * 上传文件并解析
  */
 func (u *User) upload(c *gin.Context) (err error) {
 	data := &u.UploadData
+	dataType := [3]string{"run", "walk", "shake"}
 
 	config.GetLogger().Info("开始获取文件")
-	file, header, err := c.Request.FormFile("file")
-
+	//获取用户名
+	name := c.PostForm("user_name")
+	//获取文件类型：1是跑步，2是行走，3是摇手
+	filetype, _ := strconv.Atoi(c.PostForm("type"))
+	//获取文件
+	file, err := c.FormFile("file")
 	if err != nil {
 		data.Uploaded = false
 		config.GetLogger().Warnw("文件读取失败",
@@ -765,13 +850,37 @@ func (u *User) upload(c *gin.Context) (err error) {
 		)
 		return
 	}
+	if filetype < 1 || filetype > 3 {
+		data.Uploaded = false
+		config.GetLogger().Warnw("文件接收失败",
+			"err", errors.New("文件类型错误"),
+		)
+		return errors.New("文件类型错误")
+	}
 	config.GetLogger().Info("获取文件结束")
 
-	filename := header.Filename
-	out, err := os.Create("uploadFile\\" + filename)
+	config.GetLogger().Info("开始文件重命名")
+	//文件重命名
+	ext := path.Ext(file.Filename)
+	if ext != ".dat" {
+		config.GetLogger().Warnw("文件错误",
+			"err", errors.New("文件扩展名不为.dat"),
+		)
+		return errors.New("文件扩展名不为.dat")
+	}
 
-	defer out.Close()
-	_, err = io.Copy(out, file)
+	file.Filename = dataType[filetype-1] + time.Now().Format("2006-01-02-15-04-05") + ext
+	fmt.Println(file.Filename)
+	config.GetLogger().Info("文件重命名结束")
+
+	config.GetLogger().Info("开始保存文件至服务器")
+
+	filepath := ".\\data\\" + name + "\\upload\\" + dataType[filetype-1]
+
+	//设置保存路径
+	dst := filepath + "\\" + file.Filename
+
+	err = c.SaveUploadedFile(file, dst)
 	if err != nil {
 		data.Uploaded = false
 		config.GetLogger().Warnw("文件上传失败",
@@ -779,6 +888,28 @@ func (u *User) upload(c *gin.Context) (err error) {
 		)
 		return
 	}
+	config.GetLogger().Info("保存文件至服务器结束")
+
+	config.GetLogger().Info("开始解析并生成原始数据")
+	//设置运行时参数
+	args := []string{"read_bfee_file.py", dataType[filetype-1] + time.Now().Format("2006-01-02-15-04-05"), name}
+
+	fmt.Println(args)
+
+	//使用命令行的方式运行python文件
+	cmd := exec.Command("python", args...)
+	//设置执行文件的文件路径
+	cmd.Dir = ".\\py\\"
+	//开始执行
+	err = cmd.Run()
+	if err != nil {
+		data.Uploaded = false
+		config.GetLogger().Warnw("执行python脚本失败",
+			"err", err,
+		)
+		return
+	}
+	config.GetLogger().Info("解析并生成原始数据结束")
 
 	data.Uploaded = true
 

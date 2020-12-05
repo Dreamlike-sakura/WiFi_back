@@ -67,7 +67,11 @@ type ReceiveTelAndCode struct {
 
 //用于接受用户查看动作信息时的参数
 type ReceiveCheckMovement struct {
+	UserName string `json:"user_name"`
 	FileName string `json:"file_name"`
+	FileType int    `json:"file_type"` //1是跑步、2是行走、3是搖手
+	MoveType string `json:"move_type"` //要读取文件的类型“amp”幅度、“phase”相位、“abnormal”异常
+	Type     int    `json:"type"`      //是否是去噪后的，0为原始数据，1为去噪后数据
 }
 
 //用于接受用户查看动作列表
