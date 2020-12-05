@@ -1060,7 +1060,7 @@ func (u *User) statistics(cont string) (err error) {
 
 	config.GetLogger().Info("开始获取跑步数据条数")
 	i := new(StatisticsData)
-	err = db.Table("dealt_run").Where("id = ?", id).Count(&i.Value).Error
+	err = db.Table("dealt_run").Where("id = ?", id.UserID).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
@@ -1072,7 +1072,7 @@ func (u *User) statistics(cont string) (err error) {
 	config.GetLogger().Info("获取跑步数据条数结束")
 
 	config.GetLogger().Info("开始获取行走数据条数")
-	err = db.Table("dealt_walk").Where("id = ?", id).Count(&i.Value).Error
+	err = db.Table("dealt_walk").Where("id = ?", id.UserID).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
@@ -1084,7 +1084,7 @@ func (u *User) statistics(cont string) (err error) {
 	config.GetLogger().Info("获取行走数据条数结束")
 
 	config.GetLogger().Info("开始获取摇手数据条数")
-	err = db.Table("dealt_shakehand").Where("id = ?", id).Count(&i.Value).Error
+	err = db.Table("dealt_shakehand").Where("id = ?", id.UserID).Count(&i.Value).Error
 	if err != nil {
 		config.GetLogger().Warnw("数据库错误",
 			"err:", err,
