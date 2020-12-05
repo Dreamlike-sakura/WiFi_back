@@ -85,7 +85,6 @@ if __name__ == '__main__':
             phase_dealt[j][i] = temparray[j][i] - k * m[j] - sum[i] / 30
 
     data1 = np.array(data)
-    limit2=50
 
     mat = np.array(data1);
     amp = np.array(amp);
@@ -114,19 +113,23 @@ if __name__ == '__main__':
     me = np.mean(data, axis=0)
     w = np.var(data, axis=0)
     sum1 = np.sum(amp, axis=0)
-
+    limit2 = np.mean(sum1)
+    print(limit2)
+    print(sum1);
     for i in range(length):
         if (sum1[i] >= limit2):
             sum1[i] = 1
         else:
             sum1[i] = 0
-
+    print(sum1)
     start_point = np.array([0 for i in range(length)])
     for i in range(length - 1):
         if (sum1[i] == 1 and sum1[i - 1] == 0):
-            start_point[i] = i
+            start_point[i] = 0
         if (sum1[i] == 0 and sum1[i + 1] == 0):
-            start_point[i] = 1
+            start_point[i] = amp[1][i]
+        if (sum1[i] == 1 and sum1[i + 1] == 1):
+            start_point[i] = amp[1][i]
 
     amp=amp.tolist()
     phase=phase.tolist()
