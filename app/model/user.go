@@ -289,11 +289,11 @@ func (u *User) verify(cont string) (err error) {
 
 	//获取发送验证码时储存在redis中的验证码
 	config.GetLogger().Info("开始获取redis中的验证码")
-	tempCode, errs := config.GetRedis().Get(user.UserTel).Result()
-	if errs != nil {
+	tempCode, err := config.GetRedis().Get(user.UserTel).Result()
+	if err != nil {
 		data.Verified = false
 		config.GetLogger().Warnw("验证手机验证码失败",
-			"err", errs,
+			"err", err,
 		)
 		return
 	}
